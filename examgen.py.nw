@@ -69,14 +69,14 @@ class, title etc.~given enough input parameters.
 The program is a Python 3 script, [[<<examgen.py>>]].
 We will use the following structure:
 <<examgen.py>>=
-#!/bin/env python3
+#!/usr/bin/env python3
 <<imports>>
 <<classes>>
 <<functions>>
 def main( argv ):
   <<main body>>
 if (__name__ == "__main__"):
-  return main( sys.argv )
+  sys.exit( main( sys.argv ) )
 @ Then we will successively specify what these mean.
 The [[<<imports>>]] will contain our imported modules.
 For instance, since we use [[sys.argv]] and [[sys.exit]] above we'll need to 
@@ -126,7 +126,7 @@ Thus we need to be able to add several database files, and we must add at least
 one.
 We will do that by adding a database argument to the program:
 <<parse arguments>>=
-argp.add_argument( "-d", "--database", action="append", nargs="+", \
+argp.add_argument( "-d", "--database", nargs="+", \
   required=True, help="Adds a questions database to use" )
 @ This will give us a Python list containing all the names, so we can read all 
 questions in each database:
@@ -287,8 +287,8 @@ a set.
 When we generate an exam, we want to specify which tags we are interested in.
 We can do this using an argument on the command-line:
 <<parse arguments>>=
-argp.add_argument( "-t", "--tags", action="append", nargs="+", \
-  help="Adds required question tags" )
+argp.add_argument( "-t", "--tags", nargs="+", \
+  required=True, help="Adds required question tags" )
 @ This will give us a list of tags which we can use when selecting the 
 questions for the exam:
 <<process arguments>>=
@@ -330,7 +330,7 @@ We can use the following function to find \(\bigcup_i Q_i\):
 def tags( questions ):
   T = set()
   for q in questions:
-    T.add( q.get_tags() )
+    T.update( q.get_tags() )
   return T
 @ Thus our stop condition can be formulated as follows:
 <<until the exam is covered>>=
@@ -339,8 +339,10 @@ while required_tags != tags( exam_questions )
 
 We can randomly select a question by
 <<randomly select a question>>=
-question = random.choice( questions )
-@ and then we can add it to the exam by
+question = random.sample( questions, 1 )[0]
+@ [[random.sample]] returns a list of the one sample we requested, so we store 
+only that sample instead of the list.
+Then we can add the question to the exam by
 <<add the question to the exam>>=
 exam_questions.add( question )
 @ Lastly we remove it from the database so we do not select it again:
@@ -413,6 +415,9 @@ elif args["interactive"]:
 <<question methods>>=
 def set_tags( self, new_tags ):
   self.__tags = new_tags
+@ And now we let
+<<set question tags>>=
+question.set_tags( set( user_tags.split() ) )
 @
 
 We use the function [[get_tags_from_user]] to get the set of tags for 
