@@ -21,7 +21,7 @@
 \MakeBlockQuote{<}{|}{>}
 \EnableQuotes
 
-\usepackage[natbib,style=alphabetic]{biblatex}
+\usepackage[natbib,style=alphabetic,backend=bibtexu]{biblatex}
 \addbibresource{examgen.bib}
 
 \title{%
