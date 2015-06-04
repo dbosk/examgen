@@ -14,6 +14,13 @@ clean:
 	${RM} examgen examgen.py examgen.pdf examgen.tex
 
 
+PKG_NAME-main= 		examgen
+PKG_FILES-main= 	examgen
+PKG_PREFIX-main= 	/usr/local
+PKG_DIR-main= 		/bin
+
+
 INCLUDE_MAKEFILES=makefiles
 include ${INCLUDE_MAKEFILES}/tex.mk
 include ${INCLUDE_MAKEFILES}/noweb.mk
+include ${INCLUDE_MAKEFILES}/package.mk
