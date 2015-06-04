@@ -403,7 +403,7 @@ So we let
 <<check if the question is good>>=
 elif args["interactive"]:
   remaining_tags = required_tags.difference( tags( exam_questions ) )
-  user_tags = get_tags_from_user( question, remaining_tags )
+  user_tags = get_tags_from_user( question, remaining_tags, args["prettify"] )
   if len( user_tags ) == 0:
     <<remove the question so we don't select it again>>
     continue
@@ -424,11 +424,13 @@ We use the function [[get_tags_from_user]] to get the set of tags for
 a question from the user.
 As hinted above we define the function as follows:
 <<functions>>=
-def get_tags_from_user( question, remaining_tags ):
+def get_tags_from_user( question, remaining_tags, prettify ):
   <<get tags from user>>
   return question_tags
 @ The reason we need the parameter [[remaining_tags]] is simply for usability, 
 to remind the user of what has not yet been covered.
+The parameter [[prettify]] specifies if we want the code to be prettified 
+before presented to the user.
 So the body of the function will be
 <<get tags from user>>=
 <<present the question>>
@@ -449,7 +451,7 @@ argp.add_argument( "-p", "--prettify", \
 @ This yields the following:
 <<present the question>>=
 print( "QUESTION ######################################################" )
-if args["prettify"]:
+if prettify:
   <<prettify code>>
 else:
   print( "%s" % question.get_code() )
@@ -463,24 +465,22 @@ import subprocess
 output will be the prettified code:
 <<prettify code>>=
 prettified_code = subprocess.check_output( "detex", shell=True, \
-  stdin = question.get_code() )
-print( "%s" % prettified_code )
+  input = bytearray( question.get_code().encode( "UTF-8" ) ) )
+print( "%s" % prettified_code.decode( "UTF-8" ) )
 @
 
 \subsubsection{Presenting the Tags}
 
 Then we continue with presenting the tags.
-We want to present both the remaining tags to achieve a covering and the tags 
-for the question:
+We want to present the remaining tags to achieve a covering:
 <<present the remaining tags>>=
 print( "TAGS ######################################################" )
 print( "Remaining tags: ", end="" )
 for t in remaining_tags:
   print( "%s " % t, end="" )
-print( "Question tags: ", end="" )
-for t in question.get_tags():
-  print( "%s " % t, end="" )
-@
+print( "" )
+@ The tags for the question can be presented when asking the user to correct 
+the tags.
 
 \subsubsection{Getting User Input}
 
@@ -488,6 +488,7 @@ Once we have presented the user with the data, we want to input the user's
 decision.
 We want to make this easy, so any tags the question already has should be 
 suggested as default.
+(So this is where we present the user with the question tags.)
 For this we will use the [[readline]] module:
 <<imports>>=
 import readline
@@ -498,12 +499,12 @@ question:
 <<input tags from user>>=
 qtags = ""
 for t in question.get_tags():
-  qtags += t
+  qtags += t + " "
 readline.set_startup_hook( lambda: readline.insert_text( qtags ) )
 @ Then we input the tags from the user, with the tags already pre-entered:
 <<input tags from user>>=
 try:
-  question_tags = input( "Tags: " )
+  question_tags = input( "Question tags: " )
 @ And finally we have to reset the default value for the input function:
 <<input tags from user>>=
 finally:
