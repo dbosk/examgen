@@ -1,0 +1,593 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[british]{babel}
+\usepackage{authblk}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{listings}
+\lstset{%
+  basicstyle=\footnotesize
+}
+
+\usepackage{noweb}
+% Needed to relax penalty for breaking code chunks across pages, otherwise 
+% there might be a lot of space following a code chunk.
+\def\nwendcode{\endtrivlist \endgroup}
+\let\nwdocspar=\smallbreak
+
+\usepackage{csquotes}
+\MakeBlockQuote{<}{|}{>}
+\EnableQuotes
+
+\usepackage[natbib,style=alphabetic]{biblatex}
+\addbibresource{examgen.bib}
+
+\title{%
+	examgen(1): An Exam Generator
+}
+\author{Daniel Bosk}
+\affil{%
+  School of Computer Science and Communication,\\
+  KTH Royal Institute of Technology, SE-100\,44 Stockholm
+}
+\affil{%
+  Department of Information and Communication Systems,\\
+  Mid Sweden University, SE-851\,70 Sundsvall
+}
+\date{Version 1.0 (draft)}
+
+\begin{document}
+\maketitle
+
+%\begin{abstract}
+%\dots
+%\end{abstract}
+
+\tableofcontents
+
+@
+\section{Introduction}
+
+The purpose of this program is to automatically generate the LaTeX code for an 
+exam based on some inputs.
+The inputs will be a database of questions, parameters on how to choose 
+questions from the database, meta-data about the exam---e.g.~course name, dates 
+etc.
+
+The LaTeX code uses the exam \cite{exam} document class.
+The idea is to have all exam questions available so that examgen(1) can 
+randomly select a number of them and put together the [[questions]] environment 
+of the exam document class.
+
+We can also let examgen(1) generate the surrounding code, i.e.~setting document 
+class, title etc.~given enough input parameters.
+
+\subsection{Outline}
+
+The program is a Python 3 script, [[<<examgen.py>>]].
+We will use the following structure:
+<<examgen.py>>=
+#!/bin/env python3
+<<imports>>
+<<classes>>
+<<functions>>
+def main( argv ):
+  <<main body>>
+if (__name__ == "__main__"):
+  return main( sys.argv )
+@ Then we will successively specify what these mean.
+The [[<<imports>>]] will contain our imported modules.
+For instance, since we use [[sys.argv]] and [[sys.exit]] above we'll need to 
+add
+<<imports>>=
+import sys
+@ to [[<<imports>>]].
+The code blocks [[<<classes>>]] and [[<<functions>>]] will contain our classes 
+and functions, respectively.
+
+The [[<<main body>>]] block contains the code of the main function.
+Basically, we need the following code blocks:
+<<main body>>=
+<<parse command-line arguments>>
+<<generate exam>>
+<<output result>>
+<<clean up and exit>>
+@
+
+To parse command-line arguments we will make use of Python's
+[[argparse]] \cite{argparse}:
+<<parse command-line arguments>>=
+argp = argparse.ArgumentParser( description = "Generates an exam." )
+@ We also need to add it to our imports:
+<<imports>>=
+import argparse
+@ The parsing step will then be to [[<<parse arguments>>]] and then
+[[<<process arguments>>]]:
+<<parse command-line arguments>>=
+<<parse arguments>>
+<<process arguments>>
+@
+The processing step is rather straight-forward using [[argparse]].
+We simply parse [[argv]] and get a Python dictionary containing the variables 
+we specify in [[<<parse arguments>>]]:
+<<process arguments>>=
+args = vars( argp.parse_args(argv[1:]) )
+@
+
+
+\section{Design}
+
+Inevitably, we need to keep the exam questions in some form of database.
+Our first option is to reuse the (LaTeX code of) old exams, i.e.~one exam is 
+considered one database file.
+Thus we need to be able to add several database files, and we must add at least 
+one.
+We will do that by adding a database argument to the program:
+<<parse arguments>>=
+argp.add_argument( "-d", "--database", action="append", nargs="+", \
+  required=True, help="Adds a questions database to use" )
+@ This will give us a Python list containing all the names, so we can read all 
+questions in each database:
+<<process arguments>>=
+questions = set()
+for database in args["database"]:
+  <<read questions database>>
+@ We store the questions in a set since we are not interested in any 
+redundancy, the same question should not be added twice even if it occurs in 
+two database files.
+
+\subsection{The Questions Database Format}
+
+Since the design allows for using old exams as database files, then we must 
+adapt our database format to this.
+We know that the exams are using the exam \cite{exam} document class.
+As such each question will start with the command \verb'\question' and end at 
+the beginning of the next question.
+Or in the special case of the last question, it ends with the end of the 
+[[questions]] environment.
+(See lines 87--290 in the example exam in Sect.~\ref{sec:ExampleExam} for an 
+example of a [[questions]] environment.)
+We can thus make use of Python's regular expressions facilities \cite{regex}:
+<<imports>>=
+import re
+@ We can use the following code block to set up a regular expression pattern to 
+match a question:
+<<set up question regex>>=
+question_code_pattern = re.compile( \
+  "\\\\question(.|\n)*?(?=(\\\\question|\\\\end{questions}))", \
+  re.MULTILINE )
+@ (See \cite{regex-lookaround} for a treatment of zero-width assertions in 
+regular expressions.)
+This expression will conveniently also include any parts or solution 
+environments used in the question.
+
+To read the questions database we need to do the following:
+<<read questions database>>=
+<<set up question regex>>
+file_contents = open( database, "r" ).read()
+<<match a question>>
+while ( match ):
+  <<parse question>>
+  <<remove matching question>>
+  <<match a question>>
+@ To match a question we simply let
+<<match a question>>=
+match = re.search( question_code_pattern, file_contents )
+@ This makes [[match]] an object of [[MatchObject]] type.
+This means that we can use its [[end()]] method to remove the already searched 
+text from [[file_contents]]:
+<<remove matching question>>=
+file_contents = file_contents[match.end():]
+@
+
+\subsection{The Question Format}
+
+Now that we know the format of the question databases, this brings us to the 
+next part: the format of the actual question and how to do
+[[<<parse question>>]].
+We need some sort of data structure to hold each question and its related 
+meta-data.
+One solution is to use a class:
+<<classes>>=
+class Question:
+  <<question constructors>>
+  <<question methods>>
+@
+
+We will have at least one constructor.
+A suitable one is to construct the question from its LaTeX code:
+<<question constructors>>=
+def __init__( self, code ):
+  <<question constructor body>>
+@ This LaTeX code is also a natural attribute of the class:
+<<question constructor body>>=
+self.__code = code
+@ We also need a get-method for the code attribute:
+<<question methods>>=
+def get_code( self ):
+  return self.__code
+@
+
+To be able to add a question to a set, the data structure must be <hashable>:
+<<question methods>>=
+def __hash__( self ):
+  return hash( self.__code )
+
+def __eq__( self, other ):
+  if ( not hasattr( other, "code" ) ):
+    return NotImplemented
+  return ( self.__code == other.__code )
+@ This also means that we are not allowed to modify the question object 
+throughout its lifetime, i.e.~the [[code]] attribute must not be modified.
+
+Now that we have everything we need to parse the question, we can thus define
+<<parse question>>=
+questions.add( Question( match.group() ) )
+@ where we add the question to the set of questions.
+
+
+\section{Randomly Selecting the Questions}
+
+% XXX Add references for how to create an exam
+The purpose of this work is to construct an exam, hence there are several 
+aspects we need to consider.
+The exam should examine if the student has reached the intended learning 
+outcomes.
+Since we cannot examine every detail of the material treated in the course, the 
+exam usually depends on a random sample of the material covering the key 
+concepts of the course.
+Thus, how we select the questions is of great importance.
+Firstly we need to identify similar questions.
+This is covered in Sect.~\ref{sec:tags}.
+Secondly we need to make a selection which coveres the course in a good way, 
+both in topics and in difficulty.
+In Sect.~\ref{sec:selection} we describe an algorithm which solves this 
+problem.
+
+\subsection{Tags}
+\label{sec:tags}
+
+We have handled the problem of the same question reoccurring.
+However, we still have the problem of similar questions occurring.
+These questions treat the same topic in a similar way and we must recognize 
+them as such: we don't want two questions which are too similar in an exam.
+One solution is that we mark the questions, using a system similar to tags.
+These tags can be used to identify topics, but also be used to mark the 
+difficulty level of the question.
+Thus it makes sense to have a set of tags as an attribute for our question 
+class:
+<<question constructor body>>=
+self.__tags = set()
+@ We also need a method to get this set:
+<<question methods>>=
+def get_tags( self ):
+  return self.__tags
+@
+
+To tag a question, we can use the LaTeX [[\label]] command.
+Most questions have an attached label, conventionally prefixed with [[q:]].
+We can use this convention to add a colon separated list of tags using the 
+label command.
+(See line 87 in Sect.~\ref{sec:ExampleExam} for an example.)
+This list can be extracted using the following regular expression:
+<<question constructor body>>=
+question_tags_pattern = re.compile( \
+  "\\\\label{q:([^}]*)}",
+  re.MULTILINE )
+@ We can then extract the tags using the first (and only) group in the pattern:
+<<question constructor body>>=
+self.__tags = set( \
+  re.search( question_tags_pattern, self.__code ).group(1).split(":") \
+  )
+@ This will yield a Python list of tags, which is immediately converted to 
+a set.
+
+When we generate an exam, we want to specify which tags we are interested in.
+We can do this using an argument on the command-line:
+<<parse arguments>>=
+argp.add_argument( "-t", "--tags", action="append", nargs="+", \
+  help="Adds required question tags" )
+@ This will give us a list of tags which we can use when selecting the 
+questions for the exam:
+<<process arguments>>=
+required_tags = set( args["tags"] )
+@
+
+\subsection{Handling Topics and Difficulty Levels}
+\label{sec:selection}
+
+We now have the set of required tags \(E\) for the exam, [[required_tags]] in 
+[[<<process arguments>>]] above.
+We also have the set of tags \(Q_i\) for each question \(i\), through the 
+[[get_tags()]] method in [[<<question methods>>]].
+What we want is a set of questions \(\{ Q_i \}_i\) which cover the exam \(E\), 
+i.e.~\(E = \bigcup_i Q_i\).
+Since we do not want unnecessarily many questions on the exam, we preferably 
+want to find a minimal cover.
+
+We can add both topics and difficulty levels as required tags for the exam.
+Thus, with the suggested approach we will cover both topics and all necessary 
+difficulty levels.
+
+\subsubsection{Finding a Covering}
+
+To find the covering of the exam \(E\), we will use the following approach:
+<<generate exam>>=
+exam_questions = set()
+<<until the exam is covered>>:
+  <<randomly select a question>>
+  <<check if the question is good>>
+  <<add the question to the exam>>
+  <<remove the question so we don't select it again>>
+@
+
+Our stop condition requires us to find the set of tags of the currently chosen 
+questions (\(\{Q_i\}_i = [[exam_questions]]\)).
+We can use the following function to find \(\bigcup_i Q_i\):
+<<functions>>=
+def tags( questions ):
+  T = set()
+  for q in questions:
+    T.add( q.get_tags() )
+  return T
+@ Thus our stop condition can be formulated as follows:
+<<until the exam is covered>>=
+while required_tags != tags( exam_questions )
+@
+
+We can randomly select a question by
+<<randomly select a question>>=
+question = random.choice( questions )
+@ and then we can add it to the exam by
+<<add the question to the exam>>=
+exam_questions.add( question )
+@ Lastly we remove it from the database so we do not select it again:
+<<remove the question so we don't select it again>>=
+questions.discard( question )
+@ The random selection also requires us to add the [[random]] module:
+<<imports>>=
+import random
+@
+
+\subsubsection{Checking if a Question is Good}
+
+The main part of the algorithm is [[<<check if the question is good>>]], and we 
+will cover that part now.
+We do not want to include questions which cover topics outside the scope of the 
+exam, hence the question tags must be a subset of the exam tags, 
+i.e.~\(Q_i\subset E\):
+<<check if the question is good>>=
+if not question.get_tags().issubset( required_tags ):
+  <<remove the question so we don't select it again>>
+  continue
+@
+We also want to guarantee that the algorithm progresses towards the stop 
+condition.
+To accomplish this we require that the intersection \(Q_j \cap \left( \bigcup_i 
+Q_i \right)\neq \emptyset\) between a new question \(Q_j\) and the already 
+selected questions \(\{ Q_i \}_i\) is not empty.
+However, we have a special case: if we use an old exam which is not properly 
+tagged, then we have questions with an empty tag set.
+We must take these into account as well.
+Thus we let
+<<check if the question is good>>=
+elif len( question.get_tags() ) > 0 and \
+len( tags( exam_questions ).intersection( question.get_tags() ) ) > 0:
+  <<remove the question so we don't select it again>>
+  continue
+@
+
+\subsection{Human Intervention}
+
+Some of the questions might not be tagged.
+Since the selection is randomized, we might want to have some human 
+intervention to guarantee a better selection.
+Thus we can ask the user for approval for each question.
+Since this is a feature we might optionally want, we can add a command-line 
+argument to enable it:
+<<parse arguments>>=
+argp.add_argument( "-i", "--interactive", \
+  default=False, action="store_true", \
+  help="Turns interactive mode on" )
+@
+
+One way to implement the approval is to ask the user to give the tags the 
+question satisfies; if none, then the question is discarded.
+We can ask for this when we check the question in
+[[<<check if the question is good>>]].
+So we let
+<<check if the question is good>>=
+elif args["interactive"]:
+  remaining_tags = required_tags.difference( tags( exam_questions ) )
+  user_tags = get_tags_from_user( question, remaining_tags )
+  if len( user_tags ) == 0:
+    <<remove the question so we don't select it again>>
+    continue
+  else:
+    <<set question tags>>
+    <<add the question to the exam>>
+@ To be able to [[<<set question tags>>]] we need a method for that in the 
+[[Question]] class:
+<<question methods>>=
+def set_tags( self, new_tags ):
+  self.__tags = new_tags
+@
+
+We use the function [[get_tags_from_user]] to get the set of tags for 
+a question from the user.
+As hinted above we define the function as follows:
+<<functions>>=
+def get_tags_from_user( question, remaining_tags ):
+  <<get tags from user>>
+  return question_tags
+@ The reason we need the parameter [[remaining_tags]] is simply for usability, 
+to remind the user of what has not yet been covered.
+So the body of the function will be
+<<get tags from user>>=
+<<present the question>>
+<<present the remaining tags>>
+<<input tags from user>>
+@
+
+\subsubsection{Presenting the Question}
+
+We have several options for presenting the question to the user.
+First, we can just print the code.
+Second, we can prettify the code in some way.
+We will use a command-line argument for enabling prettifying of the code:
+<<parse arguments>>=
+argp.add_argument( "-p", "--prettify", \
+  default=False, action="store_true", \
+  help="Turns on prettifying of code" )
+@ This yields the following:
+<<present the question>>=
+print( "QUESTION ######################################################" )
+if args["prettify"]:
+  <<prettify code>>
+else:
+  print( "%s" % question.get_code() )
+@
+
+We can use detex(1) to prettify the code in the terminal.
+To do this we use the [[subprocess]] module:
+<<imports>>=
+import subprocess
+@ We then run the question's LaTeX code through the detex(1) process and its 
+output will be the prettified code:
+<<prettify code>>=
+prettified_code = subprocess.check_output( "detex", shell=True, \
+  stdin = question.get_code() )
+print( "%s" % prettified_code )
+@
+
+\subsubsection{Presenting the Tags}
+
+Then we continue with presenting the tags.
+We want to present both the remaining tags to achieve a covering and the tags 
+for the question:
+<<present the remaining tags>>=
+print( "TAGS ######################################################" )
+print( "Remaining tags: ", end="" )
+for t in remaining_tags:
+  print( "%s " % t, end="" )
+print( "Question tags: ", end="" )
+for t in question.get_tags():
+  print( "%s " % t, end="" )
+@
+
+\subsubsection{Getting User Input}
+
+Once we have presented the user with the data, we want to input the user's 
+decision.
+We want to make this easy, so any tags the question already has should be 
+suggested as default.
+For this we will use the [[readline]] module:
+<<imports>>=
+import readline
+@
+
+We want to use [[readline]] to set the default value to the set of tags for the 
+question:
+<<input tags from user>>=
+qtags = ""
+for t in question.get_tags():
+  qtags += t
+readline.set_startup_hook( lambda: readline.insert_text( qtags ) )
+@ Then we input the tags from the user, with the tags already pre-entered:
+<<input tags from user>>=
+try:
+  question_tags = input( "Tags: " )
+@ And finally we have to reset the default value for the input function:
+<<input tags from user>>=
+finally:
+  readline.set_startup_hook()
+@
+
+
+\section{Generating the Output}
+
+Now that we have all the questions in [[exam_questions]] (see
+[[<<generate exam>>]] above), we can move on to the problem of outputting it.
+So in this section we define [[<<output result>>]].
+
+The trivial solution is to just print the code for the questions to standard 
+out.
+Hence we let
+<<output result>>=
+for q in exam_questions:
+  print( "%s" % q.get_code() )
+@
+
+
+\section{Future Work}
+
+There are things that would be worth extending in this solution.
+We give a list below, somewhat in order of priority.
+(Or order of complexity, so easiest first.)
+
+Since the user tags the questions selected in interactive mode, it would be 
+good to save this work.
+So these tags from interactive mode should be put into the code.
+This way the questions are correctly tagged when the exam is later used as 
+a questions database.
+
+The detex(1) utility used to print the question in the terminal removes all 
+math-mode code.
+This is bad.
+Instead of using detex(1), we could use another TeX pretty-printer---one which 
+can handle math-mode.
+One possibility is using HeVeA\footnote{%
+  URL: \url{http://hevea.inria.fr/}.
+} combined with lynx(1) or links(1).
+Or use tex2mail(1) for math-mode code, then detex(1) for the rest.
+
+We can let examgen(1) generate the code for the entire document, i.e.~preamble, 
+title, intro etc.
+We can use certain command-line arguments for date, title etc.
+The authors of the exam should be the authors of the included questions, 
+i.e.~examgen(1) has to generate the authors list.
+The alternative is to use the examiner as the author (more editor) and credit 
+contributors otherwise.
+
+Another requirement when automatically generating the preamble is to find what 
+packages are actually needed.
+The required packages can be fetched from their respective questions database.
+Although this approach might include some unnecessary packages.
+
+We want to handle inter-question dependence.
+Some questions might be follow-ups to previous questions.
+This should be detectable by tracing the questions' labels.
+If we take this into consideration we do not risk including the follow-up 
+question without the first one.
+
+
+\section*{Acknowledgements}
+
+Thanks to Martin Kjellqvist, Mid Sweden University, for the ideas of using old 
+exams as database files and the interactive mode.
+Thanks to Mitra Damghanian, Mid Sweden University, for the ideas about 
+introducing difficulty levels for questions.
+
+This code is available under the following MIT license:
+\begin{quote}
+  \input{LICENSE}
+\end{quote}
+
+
+\printbibliography
+
+
+\section*{An Index of the Code Blocks}
+
+\nowebchunks
+
+
+\appendix
+\section{An Example Exam}
+\label{sec:ExampleExam}
+\lstinputlisting[numbers=left,language={[latex]tex}]{dasak-150604.tex}
+
+
+\end{document}

@@ -1,0 +1,243 @@
+% $Id$
+% Author:  Daniel Bosk <daniel.bosk@miun.se>
+\documentclass[svv,addpoints]{miunexam}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[swedish,english]{babel}
+\usepackage[hyphens]{url}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{prettyref,varioref}
+\usepackage{subfigure}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{authblk}
+
+\usepackage{csquotes}
+\MakeBlockQuote{<}{|}{>}
+\EnableQuotes
+
+\usepackage[natbib,style=alphabetic,maxbibnames=99]{biblatex}
+\addbibresource{literature.bib}
+
+\usepackage[varioref,prettyref,listings]{miunmisc}
+
+\printanswers
+
+\examtype{Final exam}
+\courseid{DV026G}
+\course{Information Security}
+\date{2015-06-01}
+\author{%
+  Daniel Bosk
+}
+\affil{%
+  Department of Information and Communication Systems,\\
+  Mid Sweden University, SE-851\,70 Sundsvall\\
+  Email: \href{mailto:daniel.bosk@miun.se}{daniel.bosk@miun.se}\\
+  Phone: 010-142\,8709
+}
+
+\DeclareMathOperator{\hmac}{HMAC}
+\DeclareMathOperator{\xor}{\oplus}
+\DeclareMathOperator{\concat}{||}
+
+\begin{document}
+\maketitle
+\thispagestyle{foot}
+
+\section*{Instructions}
+\label{sec:Instructions}
+Carefully read the questions before you start answering them.
+Note the time limit of the exam and plan your answers accordingly.
+Only answer the question, do not write about subjects remotely related to the
+question.
+
+Write your answers on separate sheets, not on the exam paper.
+Only write on one side of the sheets.
+Start each question on a new sheet.
+Do not forget to \emph{motivate your answers.}
+
+Make sure you write your answers clearly, if I cannot read an answer the answer
+will be awarded no points---even if the answer is correct.
+The questions are \emph{not} sorted by difficulty.
+
+\begin{description}
+  \item[Time] 5 hours.
+  \item[Aids] Dictionary, course material and notes.
+  \item[Maximum points] \numpoints
+  \item[Questions] \numquestions
+\end{description}
+
+\subsection*{Preliminary grades}
+The following grading criteria applies:
+E \(\geq 50\%\),
+D \(\geq 60\%\),
+C \(\geq 70\%\), 
+B \(\geq 80\%\),
+A \(\geq 90\%\).
+No question must be awarded zero points.
+
+
+\clearpage
+\section*{Questions}
+The questions are given below.
+They are not given in any particular order.
+
+\begin{questions}
+  \question\label{q:terminology:crypto:security:E}
+  Explain the following terms:
+  \begin{parts}
+    \part[1] Confidentiality
+    \part[1] Integrity
+    \part[1] Availability
+    \part[1] Accountability
+    \part[1] Non-Repudiation
+  \end{parts}
+
+  \begin{solution}
+    See \cite{Gollmann2011cs} and \cite{Anderson2008sea} for definitions.
+  \end{solution}
+
+
+  \question\label{q:os:crypto:E:C}
+  A user wishes to provide confidentiality to a file.
+  \begin{parts}
+    \part[3] She can accomplish this through mechanisms provided in the 
+    operating system.
+    Explain how this works and what are the limits.
+
+    \part[3] She can also accomplish this through purely cryptographic 
+    mechanisms.
+    Explain how this works and what are the limits.
+  \end{parts}
+
+  \begin{solution}
+    The first way she's securing her file is by using access control mechanisms 
+    in the operating system (OS).
+
+    Assuming we have physical access to the computer, then we can just read the 
+    raw data from the disk.
+    This can be accomplished by either booting our own OS on her computer, or 
+    by removing the disk.
+
+    If we don't have physical access we can always try to bypass the access 
+    control mechanisms in other ways, e.g.\ by gaining privileges in the system 
+    or seeing if the OS has failed to protect reading from the raw disk (i.e.\ 
+    not using the file system).
+
+    The main point here is that the operating system must be working correctly 
+    for its mechanisms to be effective.
+    The \emph{running} operating system will provide confidentiality by not 
+    allowing other users' requests to open the file.
+
+    The most obvious way to have system independent security for this file is 
+    to encrypt it, i.e.~using cryptographic mechanisms.
+    This way no one can read it unless they have access to the key, and this is 
+    true no matter if you change the environment.
+    (Of course, if the system is untrusted someone can get to the key that way, 
+    but that's outside the scope of this question.)
+  \end{solution}
+
+
+  \question\label{q:infotheory:passwd:E:C}
+  Explain how information theory can be used to estimate the strength of 
+  passwords chosen under a given password composition policy:
+  \begin{parts}
+    \part[2] How can you estimate the upper bound, i.e.~the maximum possible 
+    entropy?
+
+    \part[2] Why can't you estimate any (useful) lower bound, i.e.~the minimum 
+    possible entropy?
+
+    \part[2] How can you estimate the average case, i.e.~what is usually the 
+    case when users choose the passwords?
+  \end{parts}
+
+  \begin{solution}
+    You assume that every part of the password is chosen uniformly randomly.
+    This gives the maximum entropy, i.e.~it is an upper bound.
+    You have to account for all choices the password composition policy allows.
+    Or rather, all choices the policy removes.
+
+    This is hard because a user can choose a very easy to guess password, which 
+    has almost no entropy.
+    Similarly, if all users choose the same password, then the entropy would be 
+    zero.
+
+    The average case can be estimated as in \cite{Komanduri2011opa}.
+    You have to \emph{sample a lot of user-generated passwords}, then you can 
+    perform a frequency analysis to find the probabilities and compute the 
+    entropy.
+    The users are the stochastic variable (random output) and you must get 
+    a large enough sample to estimate the probability distribution.
+  \end{solution}
+
+
+  \question\label{q:identification:authentication:E:C}
+  Describe the terms
+  \begin{parts}
+    \part[2] identification and
+    \part[2] authentication.
+  \end{parts}
+  Make sure to illustrate your explanations by examples.
+  You must also give an example of a mechanism for each of the terms.
+
+  \begin{solution}
+    In identification you claim an identity.
+    This can be done using e.g.~a username, fingerprint or DNA sequence.
+
+    In authentication you prove you are who you claim you are.
+    This can be done using e.g.~\emph{who} you are (biometric), \emph{where} 
+    you are (location) or what you \emph{do} (biometric), something you 
+    \emph{have} (e.g.~BankID), or something you \emph{know} (password).
+  \end{solution}
+
+
+  \question[4]\label{q:access-control:E}
+  Describe the main differences between Mandatory Access Control (MAC) and 
+  Discretionary Access Control (DAC).
+
+  \begin{solution}
+    In MAC the access control policy for new material is derived from the 
+    subject and objects it is based on.
+    One example is Bell--LaPadula (BLP): where information only flows upward, 
+    a document produced by someone with clearance \(A\) will also require 
+    clearance \(A\) to be read---clearance \(B<A\) will not suffice.
+    The system sets the access policy for objects.
+
+    In DAC this is under the control of the owner of an object.
+    The owner sets the access policy.
+    An example is the UNIX file system.
+  \end{solution}
+
+
+  \question\label{q:accountability:separation-of-duties:E:C}
+  Separation of duties is a core concept for security.
+  \begin{parts}
+    \part[2] Describe the two types of separation of duties.
+    \part[1] What is the main reason for separation of duties?
+  \end{parts}
+
+  \begin{solution}
+    There are two types of separation of duties:
+    dual control and functional separation.
+    Dual control means that two or more subjects must act together (at the same 
+    time) to authorize a transaction.
+    Functional separation means that several functions are needed to authorize 
+    a transaction---e.g.~create a transaction and verify it---and one subject 
+    is not allowed to do both functions.
+
+    The reason for separation of duties to make it impossible for one malicious 
+    subject to compromise a system.
+    With separation of duties the malicious subject must persuade one or more 
+    other subjects to collude.
+  \end{solution}
+
+
+\end{questions}
+
+
+\printbibliography
+\end{document}
+
