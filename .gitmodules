@@ -1,0 +1,4 @@
+[submodule "makefiles"]
+	path = makefiles
+	url = https://github.com/dbosk/makefiles.git
+	branch = master
