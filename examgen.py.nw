@@ -274,15 +274,19 @@ label command.
 This list can be extracted using the following regular expression:
 <<question constructor body>>=
 question_tags_pattern = re.compile( \
-  "\\\\label{q:([^}]*)}",
+  "\\\\label{(q|xrc):([^}]*)}",
   re.MULTILINE )
-@ We can then extract the tags using the first (and only) group in the pattern:
+@ (Another possible prefix is [[xrc:]] for exercise.)
+We can then extract the tags using the second group in the pattern:
 <<question constructor body>>=
-self.__tags = set( \
-  re.search( question_tags_pattern, self.__code ).group(1).split(":") \
-  )
-@ This will yield a Python list of tags, which is immediately converted to 
-a set.
+self.__tags = set()
+matched_tags = re.search( question_tags_pattern, self.__code )
+if matched_tags != None:
+	self.__tags = set( matched_tags.group(2).split(":") )
+@ This will yield [[None]] if the regular expression does not match, i.e.~there 
+is no label for the question.
+If there is, this will yield a Python list of tags, which is immediately 
+converted to a set.
 
 When we generate an exam, we want to specify which tags we are interested in.
 We can do this using an argument on the command-line:
