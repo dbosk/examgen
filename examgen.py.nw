@@ -359,12 +359,19 @@ The main part of the algorithm is [[<<check if the question is good>>]], and we
 will cover that part now.
 We do not want to include questions which cover topics outside the scope of the 
 exam, hence the question tags must be a subset of the exam tags, 
-i.e.~\(Q_i\subset E\):
+i.e.~\(Q_i\subset E\).
+However, sometimes we want to check this manually.
+Thus we let
 <<check if the question is good>>=
-if not question.get_tags().issubset( required_tags ):
+if not args["manual"] and not question.get_tags().issubset( required_tags ):
   <<remove the question so we don't select it again>>
   continue
+@ We add a command-line option for fully manual mode:
+<<parse arguments>>=
+argp.add_argument( "-m", "--manual", default=False, action="store_true", \
+	help="Sets fully manual mode" )
 @
+
 We also want to guarantee that the algorithm progresses towards the stop 
 condition.
 To accomplish this we require that the intersection \(Q_j \cap \left( \bigcup_i 
