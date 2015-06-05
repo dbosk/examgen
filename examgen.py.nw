@@ -384,10 +384,12 @@ selected questions \(\{ Q_i \}_i\) is not empty.
 However, we have a special case: if we use an old exam which is not properly 
 tagged, then we have questions with an empty tag set.
 We must take these into account as well.
+We also have the special case of the first selected question: when the set of 
+exam questions is empty, then the intersection will be empty.
 Thus we let
 <<check if the question is good>>=
-elif len( question.get_tags() ) > 0 and \
-len( tags( exam_questions ).intersection( question.get_tags() ) ) > 0:
+elif len( question.get_tags() ) > 0 and len( exam_questions ) > 0 and \
+len( tags( exam_questions ).intersection( question.get_tags() ) ) < 1:
   <<remove the question so we don't select it again>>
   continue
 @
