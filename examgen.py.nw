@@ -18,7 +18,7 @@
 \let\nwdocspar=\smallbreak
 
 \usepackage{csquotes}
-\MakeBlockQuote{<}{|}{>}
+\MakeBlockQuote{<}{§}{>}
 \EnableQuotes
 
 \usepackage[natbib,style=alphabetic,backend=bibtexu]{biblatex}
@@ -76,7 +76,11 @@ We will use the following structure:
 def main( argv ):
   <<main body>>
 if (__name__ == "__main__"):
-  sys.exit( main( sys.argv ) )
+  try:
+    sys.exit( main( sys.argv ) )
+  except Exception as err:
+    print( "{0}: {1}".format( sys.argv[0], err ) )
+    sys.exit( 1 )
 @ Then we will successively specify what these mean.
 The [[<<imports>>]] will contain our imported modules.
 For instance, since we use [[sys.argv]] and [[sys.exit]] above we'll need to 
@@ -343,9 +347,16 @@ while required_tags != tags( exam_questions )
 
 We can randomly select a question by
 <<randomly select a question>>=
-question = random.sample( questions, 1 )[0]
-@ [[random.sample]] returns a list of the one sample we requested, so we store 
-only that sample instead of the list.
+try:
+  question = random.sample( questions, 1 )[0]
+except ValueError as err:
+  tags_left = required_tags.difference( tags( exam_questions ) )
+  raise ValueError( "{0}: {1}".format( err, tags_left ) )
+@ [[random.sample]] returns a list of the one sample we requested or it raises 
+an exception.
+In case of an exception, we want to make the error message more useful:
+thus we add the list of tags left when the error occurred.
+If no error occurred, then we store only that sample instead of the list.
 Then we can add the question to the exam by
 <<add the question to the exam>>=
 exam_questions.add( question )
