@@ -389,18 +389,16 @@ argp.add_argument( "-m", "--manual", default=False, action="store_true", \
 
 We also want to guarantee that the algorithm progresses towards the stop 
 condition.
-To accomplish this we require that the intersection \(Q_j \cap \left( \bigcup_i 
-Q_i \right)\neq \emptyset\) between a new question \(Q_j\) and the already 
-selected questions \(\{ Q_i \}_i\) is not empty.
+To accomplish this we require that the new question \(Q_j\) is not a subset of 
+the tags for all already selected questions, \(\bigcup_i Q_i\).
 However, we have a special case: if we use an old exam which is not properly 
 tagged, then we have questions with an empty tag set.
-We must take these into account as well.
-We also have the special case of the first selected question: when the set of 
-exam questions is empty, then the intersection will be empty.
+We must take these into account as well: these questions will always be 
+a subset as the empty set is a subset of any set.
 Thus we let
 <<check if the question is good>>=
-elif len( question.get_tags() ) > 0 and len( exam_questions ) > 0 and \
-len( tags( exam_questions ).intersection( question.get_tags() ) ) < 1:
+elif len( question.get_tags() ) > 0 and \
+question.get_tags().issubset( tags( exam_questions ) ):
   <<remove the question so we don't select it again>>
   continue
 @
