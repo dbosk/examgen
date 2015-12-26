@@ -73,14 +73,14 @@ We will use the following structure:
 <<imports>>
 <<classes>>
 <<functions>>
-def main( argv ):
+def main(argv):
   <<main body>>
 if (__name__ == "__main__"):
   try:
-    sys.exit( main( sys.argv ) )
+    sys.exit(main(sys.argv))
   except Exception as err:
-    print( "{0}: {1}".format( sys.argv[0], err ) )
-    sys.exit( 1 )
+    print("{0}: {1}".format(sys.argv[0], err))
+    sys.exit(1)
 @ Then we will successively specify what these mean.
 The [[<<imports>>]] will contain our imported modules.
 For instance, since we use [[sys.argv]] and [[sys.exit]] above we'll need to 
@@ -103,7 +103,7 @@ Basically, we need the following code blocks:
 To parse command-line arguments we will make use of Python's
 [[argparse]] \cite{argparse}:
 <<parse command-line arguments>>=
-argp = argparse.ArgumentParser( description = "Generates an exam." )
+argp = argparse.ArgumentParser(description="Generates an exam.")
 @ We also need to add it to our imports:
 <<imports>>=
 import argparse
@@ -117,7 +117,7 @@ The processing step is rather straight-forward using [[argparse]].
 We simply parse [[argv]] and get a Python dictionary containing the variables 
 we specify in [[<<parse arguments>>]]:
 <<process arguments>>=
-args = vars( argp.parse_args(argv[1:]) )
+args = vars(argp.parse_args(argv[1:]))
 @
 
 
@@ -130,8 +130,9 @@ Thus we need to be able to add several database files, and we must add at least
 one.
 We will do that by adding a database argument to the program:
 <<parse arguments>>=
-argp.add_argument( "-d", "--database", nargs="+", \
-  required=True, help="Adds a questions database to use" )
+argp.add_argument(
+  "-d", "--database", nargs="+",
+  required=True, help="Adds a questions database to use")
 @ This will give us a Python list containing all the names, so we can read all 
 questions in each database:
 <<process arguments>>=
@@ -159,9 +160,9 @@ import re
 @ We can use the following code block to set up a regular expression pattern to 
 match a question:
 <<set up question regex>>=
-question_code_pattern = re.compile( \
-  "\\\\question(.|\n)*?(?=(\\\\question|\\\\end{questions}))", \
-  re.MULTILINE )
+question_code_pattern = re.compile(
+  "\\\\question(.|\n)*?(?=(\\\\question|\\\\end{questions}))",
+  re.MULTILINE)
 @ (See \cite{regex-lookaround} for a treatment of zero-width assertions in 
 regular expressions.)
 This expression will conveniently also include any parts or solution 
@@ -170,15 +171,15 @@ environments used in the question.
 To read the questions database we need to do the following:
 <<read questions database>>=
 <<set up question regex>>
-file_contents = open( database, "r" ).read()
+file_contents = open(database, "r").read()
 <<match a question>>
-while ( match ):
+while (match):
   <<parse question>>
   <<remove matching question>>
   <<match a question>>
 @ To match a question we simply let
 <<match a question>>=
-match = re.search( question_code_pattern, file_contents )
+match = re.search(question_code_pattern, file_contents)
 @ This makes [[match]] an object of [[MatchObject]] type.
 This means that we can use its [[end()]] method to remove the already searched 
 text from [[file_contents]]:
@@ -203,32 +204,32 @@ class Question:
 We will have at least one constructor.
 A suitable one is to construct the question from its LaTeX code:
 <<question constructors>>=
-def __init__( self, code ):
+def __init__(self, code):
   <<question constructor body>>
 @ This LaTeX code is also a natural attribute of the class:
 <<question constructor body>>=
 self.__code = code
 @ We also need a get-method for the code attribute:
 <<question methods>>=
-def get_code( self ):
+def get_code(self):
   return self.__code
 @
 
 To be able to add a question to a set, the data structure must be <hashable>:
 <<question methods>>=
-def __hash__( self ):
-  return hash( self.__code )
+def __hash__(self):
+  return hash(self.__code)
 
-def __eq__( self, other ):
-  if ( not hasattr( other, "code" ) ):
+def __eq__(self, other):
+  if (not hasattr(other, "code")):
     return NotImplemented
-  return ( self.__code == other.__code )
+  return (self.__code == other.__code)
 @ This also means that we are not allowed to modify the question object 
 throughout its lifetime, i.e.~the [[code]] attribute must not be modified.
 
 Now that we have everything we need to parse the question, we can thus define
 <<parse question>>=
-questions.add( Question( match.group() ) )
+questions.add(Question(match.group()))
 @ where we add the question to the set of questions.
 
 
@@ -266,7 +267,7 @@ class:
 self.__tags = set()
 @ We also need a method to get this set:
 <<question methods>>=
-def get_tags( self ):
+def get_tags(self):
   return self.__tags
 @
 
@@ -277,16 +278,16 @@ label command.
 (See line 87 in Sect.~\ref{sec:ExampleExam} for an example.)
 This list can be extracted using the following regular expression:
 <<question constructor body>>=
-question_tags_pattern = re.compile( \
+question_tags_pattern = re.compile(
   "\\\\label{(q|xrc):([^}]*)}",
-  re.MULTILINE )
+  re.MULTILINE)
 @ (Another possible prefix is [[xrc:]] for exercise.)
 We can then extract the tags using the second group in the pattern:
 <<question constructor body>>=
 self.__tags = set()
-matched_tags = re.search( question_tags_pattern, self.__code )
-if matched_tags != None:
-	self.__tags = set( matched_tags.group(2).split(":") )
+matched_tags = re.search(question_tags_pattern, self.__code)
+if matched_tags is not None:
+	self.__tags = set(matched_tags.group(2).split(":"))
 @ This will yield [[None]] if the regular expression does not match, i.e.~there 
 is no label for the question.
 If there is, this will yield a Python list of tags, which is immediately 
@@ -295,12 +296,13 @@ converted to a set.
 When we generate an exam, we want to specify which tags we are interested in.
 We can do this using an argument on the command-line:
 <<parse arguments>>=
-argp.add_argument( "-t", "--tags", nargs="+", \
-  required=True, help="Adds required question tags" )
+argp.add_argument(
+  "-t", "--tags", nargs="+",
+  required=True, help="Adds required question tags")
 @ This will give us a list of tags which we can use when selecting the 
 questions for the exam:
 <<process arguments>>=
-required_tags = set( args["tags"] )
+required_tags = set(args["tags"])
 @
 
 \subsection{Handling Topics and Difficulty Levels}
@@ -335,23 +337,23 @@ Our stop condition requires us to find the set of tags of the currently chosen
 questions (\(\{Q_i\}_i = [[exam_questions]]\)).
 We can use the following function to find \(\bigcup_i Q_i\):
 <<functions>>=
-def tags( questions ):
+def tags(questions):
   T = set()
   for q in questions:
-    T.update( q.get_tags() )
+    T.update(q.get_tags())
   return T
 @ Thus our stop condition can be formulated as follows:
 <<until the exam is covered>>=
-while required_tags != tags( exam_questions )
+while required_tags != tags(exam_questions)
 @
 
 We can randomly select a question by
 <<randomly select a question>>=
 try:
-  question = random.sample( questions, 1 )[0]
+  question = random.sample(questions, 1)[0]
 except ValueError as err:
-  tags_left = required_tags.difference( tags( exam_questions ) )
-  raise ValueError( "{0}: {1}".format( err, tags_left ) )
+  tags_left = required_tags.difference(tags(exam_questions))
+  raise ValueError("{0}: {1}".format(err, tags_left))
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
 In case of an exception, we want to make the error message more useful:
@@ -359,10 +361,10 @@ thus we add the list of tags left when the error occurred.
 If no error occurred, then we store only that sample instead of the list.
 Then we can add the question to the exam by
 <<add the question to the exam>>=
-exam_questions.add( question )
+exam_questions.add(question)
 @ Lastly we remove it from the database so we do not select it again:
 <<remove the question so we don't select it again>>=
-questions.discard( question )
+questions.discard(question)
 @ The random selection also requires us to add the [[random]] module:
 <<imports>>=
 import random
@@ -378,13 +380,14 @@ i.e.~\(Q_i\subset E\).
 However, sometimes we want to check this manually.
 Thus we let
 <<check if the question is good>>=
-if not args["manual"] and not question.get_tags().issubset( required_tags ):
+if not args["manual"] and not question.get_tags().issubset(required_tags):
   <<remove the question so we don't select it again>>
   continue
 @ We add a command-line option for fully manual mode:
 <<parse arguments>>=
-argp.add_argument( "-m", "--manual", default=False, action="store_true", \
-	help="Sets fully manual mode" )
+argp.add_argument(
+  "-m", "--manual", default=False, action="store_true",
+	help="Sets fully manual mode")
 @
 
 We also want to guarantee that the algorithm progresses towards the stop 
@@ -397,8 +400,8 @@ We must take these into account as well: these questions will always be
 a subset as the empty set is a subset of any set.
 Thus we let
 <<check if the question is good>>=
-elif len( question.get_tags() ) > 0 and \
-question.get_tags().issubset( tags( exam_questions ) ):
+elif len(question.get_tags()) > 0 and
+question.get_tags().issubset(tags(exam_questions)):
   <<remove the question so we don't select it again>>
   continue
 @
@@ -412,9 +415,10 @@ Thus we can ask the user for approval for each question.
 Since this is a feature we might optionally want, we can add a command-line 
 argument to enable it:
 <<parse arguments>>=
-argp.add_argument( "-i", "--interactive", \
-  default=False, action="store_true", \
-  help="Turns interactive mode on" )
+argp.add_argument(
+  "-i", "--interactive",
+  default=False, action="store_true",
+  help="Turns interactive mode on")
 @
 
 One way to implement the approval is to ask the user to give the tags the 
@@ -424,9 +428,9 @@ We can ask for this when we check the question in
 So we let
 <<check if the question is good>>=
 elif args["interactive"]:
-  remaining_tags = required_tags.difference( tags( exam_questions ) )
-  user_tags = get_tags_from_user( question, remaining_tags, args["prettify"] )
-  if len( user_tags ) == 0:
+  remaining_tags = required_tags.difference(tags(exam_questions))
+  user_tags = get_tags_from_user(question, remaining_tags, args["prettify"])
+  if len(user_tags) == 0:
     <<remove the question so we don't select it again>>
     continue
   else:
@@ -435,18 +439,18 @@ elif args["interactive"]:
 @ To be able to [[<<set question tags>>]] we need a method for that in the 
 [[Question]] class:
 <<question methods>>=
-def set_tags( self, new_tags ):
+def set_tags(self, new_tags):
   self.__tags = new_tags
 @ And now we let
 <<set question tags>>=
-question.set_tags( set( user_tags.split() ) )
+question.set_tags(set(user_tags.split()))
 @
 
 We use the function [[get_tags_from_user]] to get the set of tags for 
 a question from the user.
 As hinted above we define the function as follows:
 <<functions>>=
-def get_tags_from_user( question, remaining_tags, prettify ):
+def get_tags_from_user(question, remaining_tags, prettify):
   <<get tags from user>>
   return question_tags
 @ The reason we need the parameter [[remaining_tags]] is simply for usability, 
@@ -467,16 +471,17 @@ First, we can just print the code.
 Second, we can prettify the code in some way.
 We will use a command-line argument for enabling prettifying of the code:
 <<parse arguments>>=
-argp.add_argument( "-p", "--prettify", \
-  default=False, action="store_true", \
-  help="Turns on prettifying of code" )
+argp.add_argument(
+  "-p", "--prettify",
+  default=False, action="store_true",
+  help="Turns on prettifying of code")
 @ This yields the following:
 <<present the question>>=
-print( "QUESTION ######################################################" )
+print("QUESTION ######################################################")
 if prettify:
   <<prettify code>>
 else:
-  print( "%s" % question.get_code() )
+  print("%s" % question.get_code())
 @
 
 We can use detex(1) to prettify the code in the terminal.
@@ -486,9 +491,10 @@ import subprocess
 @ We then run the question's LaTeX code through the detex(1) process and its 
 output will be the prettified code:
 <<prettify code>>=
-prettified_code = subprocess.check_output( "detex", shell=True, \
-  input = bytearray( question.get_code().encode( "UTF-8" ) ) )
-print( "%s" % prettified_code.decode( "UTF-8" ) )
+prettified_code = subprocess.check_output(
+  "detex", shell=True,
+  input=bytearray(question.get_code().encode("UTF-8")))
+print("%s" % prettified_code.decode("UTF-8"))
 @
 
 \subsubsection{Presenting the Tags}
@@ -496,11 +502,11 @@ print( "%s" % prettified_code.decode( "UTF-8" ) )
 Then we continue with presenting the tags.
 We want to present the remaining tags to achieve a covering:
 <<present the remaining tags>>=
-print( "TAGS ######################################################" )
-print( "Remaining tags: ", end="" )
+print("TAGS ######################################################")
+print("Remaining tags: ", end="")
 for t in remaining_tags:
-  print( "%s " % t, end="" )
-print( "" )
+  print("%s " % t, end="")
+print("")
 @ The tags for the question can be presented when asking the user to correct 
 the tags.
 
@@ -522,11 +528,11 @@ question:
 qtags = ""
 for t in question.get_tags():
   qtags += t + " "
-readline.set_startup_hook( lambda: readline.insert_text( qtags ) )
+readline.set_startup_hook(lambda: readline.insert_text(qtags))
 @ Then we input the tags from the user, with the tags already pre-entered:
 <<input tags from user>>=
 try:
-  question_tags = input( "Question tags: " )
+  question_tags = input("Question tags: ")
 @ And finally we have to reset the default value for the input function:
 <<input tags from user>>=
 finally:
@@ -545,7 +551,7 @@ out.
 Hence we let
 <<output result>>=
 for q in exam_questions:
-  print( "%s" % q.get_code() )
+  print("%s" % q.get_code())
 @
 
 
