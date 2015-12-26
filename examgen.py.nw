@@ -75,7 +75,7 @@ We will use the following structure:
 <<functions>>
 def main(argv):
   <<main body>>
-if (__name__ == "__main__"):
+if __name__ == "__main__":
   try:
     sys.exit(main(sys.argv))
   except Exception as err:
@@ -221,7 +221,7 @@ def __hash__(self):
   return hash(self.__code)
 
 def __eq__(self, other):
-  if (not hasattr(other, "code")):
+  if not hasattr(other, "code"):
     return NotImplemented
   return (self.__code == other.__code)
 @ This also means that we are not allowed to modify the question object 
@@ -400,8 +400,8 @@ We must take these into account as well: these questions will always be
 a subset as the empty set is a subset of any set.
 Thus we let
 <<check if the question is good>>=
-elif len(question.get_tags()) > 0 and
-question.get_tags().issubset(tags(exam_questions)):
+elif len(question.get_tags()) > 0 and \
+    question.get_tags().issubset(tags(exam_questions)):
   <<remove the question so we don't select it again>>
   continue
 @
