@@ -280,20 +280,24 @@ Most questions have an attached label, conventionally prefixed with [[q:]].
 We can use this convention to add a colon separated list of tags using the 
 label command.
 (See line 87 in \cref{sec:ExampleExam} for an example.)
-This list can be extracted using the following regular expression:
+This list can be extracted in the following way:
 <<question constructor body>>=
+<<question tags regex pattern>>
+<<filter out tags using regex>>
+@ where
+<<question tags regex pattern>>=
 question_tags_pattern = re.compile(
   "\\\\label{(q|xrc):([^}]*)}",
   re.MULTILINE)
-@ (Another possible prefix is [[xrc:]] for exercise.)
+@ (Another possible prefix is [[xrc:]], for exercise.)
 We can then extract the tags using the second group in the pattern:
-<<question constructor body>>=
+<<filter out tags using regex>>=
 self.__tags = set()
 matched_tags = re.search(question_tags_pattern, self.__code)
 if matched_tags is not None:
 	self.__tags = set(matched_tags.group(2).split(":"))
-@ This will yield [[None]] if the regular expression does not match, i.e.~there 
-is no label for the question.
+@ This will yield [[None]] if the regular expression does not match, i.e.\ 
+there is no label for the question.
 If there is, this will yield a Python list of tags, which is immediately 
 converted to a set.
 
@@ -438,16 +442,28 @@ elif args["interactive"]:
     <<remove the question so we don't select it again>>
     continue
   else:
-    <<set question tags>>
+    question.set_tags(set(user_tags.split()))
     <<add the question to the exam>>
-@ To be able to [[<<set question tags>>]] we need a method for that in the 
-[[Question]] class:
+@ This requires a [[set_tags]] method in the [[Question]] class.
 <<question methods>>=
 def set_tags(self, new_tags):
   self.__tags = new_tags
-@ And now we let
-<<set question tags>>=
-question.set_tags(set(user_tags.split()))
+  <<update tags in the label>>
+@
+
+If the user changes the tags of a question, then we would like to update the 
+question with the new tag set.
+This is what we want to do with the [[<<update tags in the label>>]] code 
+block.
+The label and tags are part of the question text, so we need to replace the old
+text with new.
+We can use the same [[<<question tags regex pattern>>]] as before to find the 
+label containing the tags, then replace the whole thing with the new tag set.
+<<update tags in the label>>=
+<<question tags regex pattern>>
+label = re.search(question_tags_pattern, self.__code)
+self.__code = self.__code.replace(label.group(), "\\label{q:" + \
+  ":".join(new_tags) + "}")
 @
 
 We use the function [[get_tags_from_user]] to get the set of tags for 
