@@ -1,0 +1,27 @@
+This is a general-purpose, simple exam generator for the \LaTeX\ documentclass 
+exam~\cite{exam}.
+It reads the question database from the source code of old exams or a file with 
+questions.
+The questions are expected to start with the \verb'\question' macro and end by 
+the start of the next question, the \verb'\end{document}' macro or the end of 
+the file.
+In each question the generator will look for a label with the format 
+\verb'\label{q:tag1:tag2:...:tagN}'.
+The tags are used to filter which questions qualify for inclusion in the exam 
+to be generated.
+The tags can be used to represent topic, difficulty level, intended learning 
+outcomes, etc.
+
+The generation algorithm works as follows:
+The set of desired tags, \(D\), is specified on the command line.
+The set of tags of the generated exam, \(E\), is the union of the set of tags 
+for each included question, \(Q_i\).
+The union must be equal to the set of desired tags.
+Thus \(E = \bigcup_i Q_i\) and \(E = D\) is the condition that must be 
+fulfilled.
+To achieve this, the algorithm randomly selects a question with tags \(Q_i\), 
+if \(Q_i\subseteq E\) or \(Q_i\cap D\neq Q_i\) the question is discarded.
+Otherwise the question adds one tag to \(E\) which brings \(E\) closer to 
+equality of \(D\).
+The algorithm ensures termination by either reaching equality or discarding all
+questions in the database.

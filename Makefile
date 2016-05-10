@@ -6,7 +6,7 @@ examgen: examgen.py
 	chmod +x $@
 
 examgen.py: examgen.py.nw
-examgen.pdf: examgen.py.nw examgen.bib LICENSE
+examgen.pdf: examgen.py.nw abstract.tex examgen.bib LICENSE
 examgen.pdf: infosakb-150601.tex
 
 .PHONY: clean
