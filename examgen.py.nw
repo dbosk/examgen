@@ -173,7 +173,7 @@ To read the questions database we need to do the following:
 <<set up question regex>>
 file_contents = open(database, "r").read()
 <<match a question>>
-while (match):
+while match:
   <<parse question>>
   <<remove matching question>>
   <<match a question>>
