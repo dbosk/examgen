@@ -7,6 +7,14 @@ Python 3 and the documentation is LaTeX.
 
 [noweb]: https://github.com/nrnrnr/noweb
 
+Installation
+-------------------------------------------------------------------------------
+
+There are two options for "installing" this utility.  Either go to 
+[releases][Releases] and follow the instructions for the latest release, or you 
+can follow the build instructions below.
+
+[Releases]: https://github.com/dbosk/examgen/releases
 
 Building
 -------------------------------------------------------------------------------
@@ -24,11 +32,14 @@ Once you have the dependencies.  Make sure to first clone the submodules: `git
 submodule update --init`.  Then you can build the documentation PDF by `make 
 examgen.pdf`.  To get the executable code run `make examgen`, then run 
 `./examgen` to get the usage.  (You can also run `make examgen.py` is you 
-prefer to have the .py file-name extension.)
+prefer to have the .py file-name extension.)  Finally, if you'd like to have 
+the `examgen` command available somewhere in your $PATH, then `make install` 
+will put `examgen` in `/usr/local/bin`.
 
 In summary:
 ```
 $ git submodule update --init
 $ make examgen.pdf
 $ make examgen
+$ make install
 ```
