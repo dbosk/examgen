@@ -395,7 +395,7 @@ if not args["manual"] and not question.get_tags().issubset(required_tags):
 <<parse arguments>>=
 argp.add_argument(
   "-m", "--manual", default=False, action="store_true",
-  help="Sets manual mode, i.e. disables automated checking")
+  help="Sets manual mode, disables filtering algorithm")
 @
 
 We also want to guarantee that the algorithm progresses towards the stop 
@@ -426,7 +426,8 @@ argument to enable it:
 argp.add_argument(
   "-i", "--interactive",
   default=False, action="store_true",
-  help="Turns interactive mode on, lets you modify each question's tags")
+  help="Turns interactive mode on, \
+    lets you modify each qualifying question's tags")
 @
 
 One way to implement the approval is to ask the user to give the tags the 
