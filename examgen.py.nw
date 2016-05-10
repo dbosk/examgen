@@ -5,6 +5,9 @@
 \usepackage{authblk}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage[hyphens]{url}
+\usepackage{hyperref}
+\usepackage[capitalize]{cleveref}
 
 \usepackage{listings}
 \lstset{%
@@ -154,8 +157,8 @@ As such each question will start with the command \verb'\question' and end at
 the beginning of the next question.
 Or in the special case of the last question, it ends with the end of the 
 [[questions]] environment.
-(See lines 87--290 in the example exam in Sect.~\ref{sec:ExampleExam} for an 
-example of a [[questions]] environment.)
+(See lines 87--290 in the example exam in \cref{sec:ExampleExam} for an example 
+of a [[questions]] environment.)
 We can thus make use of Python's regular expressions facilities \cite{regex}:
 <<imports>>=
 import re
@@ -247,11 +250,10 @@ exam usually depends on a random sample of the material covering the key
 concepts of the course.
 Thus, how we select the questions is of great importance.
 Firstly we need to identify similar questions.
-This is covered in Sect.~\ref{sec:tags}.
-Secondly we need to make a selection which coveres the course in a good way, 
+This is covered in \cref{sec:tags}.
+Secondly we need to make a selection which covers the course in a good way, 
 both in topics and in difficulty.
-In Sect.~\ref{sec:selection} we describe an algorithm which solves this 
-problem.
+In \cref{sec:selection} we describe an algorithm which solves this problem.
 
 \subsection{Tags}
 \label{sec:tags}
@@ -277,7 +279,7 @@ To tag a question, we can use the LaTeX [[\label]] command.
 Most questions have an attached label, conventionally prefixed with [[q:]].
 We can use this convention to add a colon separated list of tags using the 
 label command.
-(See line 87 in Sect.~\ref{sec:ExampleExam} for an example.)
+(See line 87 in \cref{sec:ExampleExam} for an example.)
 This list can be extracted using the following regular expression:
 <<question constructor body>>=
 question_tags_pattern = re.compile(
