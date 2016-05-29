@@ -84,7 +84,7 @@ if __name__ == "__main__":
   try:
     sys.exit(main(sys.argv))
   except Exception as err:
-    print("{0}: {1}".format(sys.argv[0], err))
+    print("{0}: {1}".format(sys.argv[0], err), file=sys.stderr)
     sys.exit(1)
 @ Then we will successively specify what these mean.
 The [[<<imports>>]] will contain our imported modules.
