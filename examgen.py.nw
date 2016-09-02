@@ -39,7 +39,7 @@
   Department of Information and Communication Systems,\\
   Mid Sweden University, SE-851\,70 Sundsvall
 }
-\date{Version 1.0 (draft)}
+\date{Version 1.1}
 
 \begin{document}
 \maketitle
@@ -577,61 +577,9 @@ for q in exam_questions:
 @
 
 
-\section{Future Work}
-
-There are things that would be worth extending in this solution.
-We give a list below, somewhat in order of priority.
-(Or order of complexity, so easiest first.)
-
-Since the user tags the questions selected in interactive mode, it would be 
-good to save this work.
-So these tags from interactive mode should be put into the code.
-This way the questions are correctly tagged when the exam is later used as 
-a questions database.
-
-The detex(1) utility used to print the question in the terminal removes all 
-math-mode code.
-This is bad.
-Instead of using detex(1), we could use another TeX pretty-printer---one which 
-can handle math-mode.
-One possibility is using HeVeA\footnote{%
-  URL: \url{http://hevea.inria.fr/}.
-} combined with lynx(1) or links(1).
-Or use tex2mail(1) for math-mode code, then detex(1) for the rest.
-
-We can let examgen(1) generate the code for the entire document, i.e.~preamble, 
-title, intro etc.
-We can use certain command-line arguments for date, title etc.
-The authors of the exam should be the authors of the included questions, 
-i.e.~examgen(1) has to generate the authors list.
-The alternative is to use the examiner as the author (more editor) and credit 
-contributors otherwise.
-
-Another requirement when automatically generating the preamble is to find what 
-packages are actually needed.
-The required packages can be fetched from their respective questions database.
-Although this approach might include some unnecessary packages.
-
-We want to handle inter-question dependence.
-Some questions might be follow-ups to previous questions.
-This should be detectable by tracing the questions' labels.
-If we take this into consideration we do not risk including the follow-up 
-question without the first one.
-
-
 \section*{Acknowledgements}
 
-Thanks to Martin Kjellqvist, Mid Sweden University, for the ideas of using old 
-exams as database files and the interactive mode.
-Thanks to Mitra Damghanian, Mid Sweden University, for the ideas about 
-introducing difficulty levels for questions.
-Thanks to Lennart Franked, Mid Sweden University, for the ideas about focusing 
-the exam towards the intended learning outcomes directly.
-
-This code is available under the following MIT license:
-\begin{quote}
-  \input{LICENSE}
-\end{quote}
+\input{acknowledgements.tex}
 
 
 \printbibliography
