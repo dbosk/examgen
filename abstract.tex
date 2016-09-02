@@ -6,7 +6,9 @@ The questions are expected to start with the \verb'\question' macro and end by
 the start of the next question, the \verb'\end{document}' macro or the end of 
 the file.
 In each question the generator will look for a label with the format 
-\verb'\label{q:tag1:tag2:...:tagN}'.
+\verb'\label{q:tag1:tag2:...:tagN}' or comments on the form
+\verb'% tags: tag1:...:tagN'.
+The set of tags is the union of all tags found.
 The tags are used to filter which questions qualify for inclusion in the exam 
 to be generated.
 The tags can be used to represent topic, difficulty level, intended learning 

@@ -28,7 +28,7 @@
 \addbibresource{examgen.bib}
 
 \title{%
-	examgen(1): An Exam Generator
+  examgen: An Exam Generator
 }
 \author{Daniel Bosk}
 \affil{%
@@ -282,6 +282,7 @@ label command.
 (See line 87 in \cref{sec:ExampleExam} for an example.)
 This list can be extracted in the following way:
 <<question constructor body>>=
+self.__tags = set()
 <<question tags regex pattern>>
 <<filter out tags using regex>>
 @ where
@@ -290,16 +291,32 @@ question_tags_pattern = re.compile(
   "\\\\label{(q|xrc):([^}]*)}",
   re.MULTILINE)
 @ (Another possible prefix is [[xrc:]], for exercise.)
-We can then extract the tags using the second group in the pattern:
+We can then extract the tags using the second group in the pattern and add the 
+tags to the set of tags:
 <<filter out tags using regex>>=
-self.__tags = set()
-matched_tags = re.search(question_tags_pattern, self.__code)
-if matched_tags is not None:
-	self.__tags = set(matched_tags.group(2).split(":"))
+matched_tags = question_tags_pattern.finditer(self.__code)
+for match in matched_tags:
+  self.__tags |= set(match.group(2).split(":"))
 @ This will yield [[None]] if the regular expression does not match, i.e.\ 
 there is no label for the question.
 If there is, this will yield a Python list of tags, which is immediately 
 converted to a set.
+
+Keeping the tags in the label works if there are a few shortly-named tags, 
+however, this approach does not scale well.
+For this reason we also want to provide another way to supply several 
+longer-named tags, e.g.\ to have intended learning outcomes as tags.
+We will do this by a specially crafted comment in the code of the question.
+<<question tags regex pattern>>=
+question_comment_pattern = re.compile(
+  "% ?tags: ?(.*)$",
+  re.MULTILINE)
+@ Then we can take the union of these tags and those found in the label:
+<<filter out tags using regex>>=
+matched_tags = question_comment_pattern.finditer(self.__code)
+for match in matched_tags:
+  self.__tags |= set(match.group(1).split(":"))
+@
 
 When we generate an exam, we want to specify which tags we are interested in.
 We can do this using an argument on the command-line:
@@ -324,6 +341,7 @@ What we want is a set of questions \(\{ Q_i \}_i\) which cover the exam \(E\),
 i.e.~\(E = \bigcup_i Q_i\).
 Since we do not want unnecessarily many questions on the exam, we preferably 
 want to find a minimal cover.
+However, our algorithm will not guarantee a minimal covering.
 
 We can add topics, difficulty levels and intended learning outcomes as required 
 tags for the exam.
@@ -464,8 +482,9 @@ label containing the tags, then replace the whole thing with the new tag set.
 <<update tags in the label>>=
 <<question tags regex pattern>>
 label = re.search(question_tags_pattern, self.__code)
-self.__code = self.__code.replace(label.group(), "\\label{q:" + \
-  ":".join(new_tags) + "}")
+if label is not None:
+  self.__code = self.__code.replace(label.group(), "\\label{q:" + \
+    ":".join(new_tags) + "}")
 @
 
 We use the function [[get_tags_from_user]] to get the set of tags for 
