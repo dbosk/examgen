@@ -325,9 +325,10 @@ i.e.~\(E = \bigcup_i Q_i\).
 Since we do not want unnecessarily many questions on the exam, we preferably 
 want to find a minimal cover.
 
-We can add both topics and difficulty levels as required tags for the exam.
-Thus, with the suggested approach we will cover both topics and all necessary 
-difficulty levels.
+We can add topics, difficulty levels and intended learning outcomes as required 
+tags for the exam.
+Thus, with the suggested approach we will cover topics, all necessary 
+difficulty levels and all intended learning outcomes.
 
 \subsubsection{Finding a Covering}
 
@@ -624,6 +625,8 @@ Thanks to Martin Kjellqvist, Mid Sweden University, for the ideas of using old
 exams as database files and the interactive mode.
 Thanks to Mitra Damghanian, Mid Sweden University, for the ideas about 
 introducing difficulty levels for questions.
+Thanks to Lennart Franked, Mid Sweden University, for the ideas about focusing 
+the exam towards the intended learning outcomes directly.
 
 This code is available under the following MIT license:
 \begin{quote}
