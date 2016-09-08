@@ -309,13 +309,13 @@ longer-named tags, e.g.\ to have intended learning outcomes as tags.
 We will do this by a specially crafted comment in the code of the question.
 <<question tags regex pattern>>=
 question_comment_pattern = re.compile(
-  "% ?tags: ?(.*)$",
+  "% ?(tags?|ilos?|ILOs?): ?(.*)$",
   re.MULTILINE)
 @ Then we can take the union of these tags and those found in the label:
 <<filter out tags using regex>>=
 matched_tags = question_comment_pattern.finditer(self.__code)
 for match in matched_tags:
-  self.__tags |= set(match.group(1).split(":"))
+  self.__tags |= set(match.group(2).split(":"))
 @
 
 When we generate an exam, we want to specify which tags we are interested in.
