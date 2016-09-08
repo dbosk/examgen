@@ -367,7 +367,7 @@ We can use the following function to find \(\bigcup_i Q_i\):
 def tags(questions):
   T = set()
   for q in questions:
-    T.update(q.get_tags())
+    T |= q.get_tags()
   return T
 @ Thus our stop condition can be formulated as follows:
 <<until the exam is covered>>=
@@ -379,7 +379,7 @@ We can randomly select a question by
 try:
   question = random.sample(questions, 1)[0]
 except ValueError as err:
-  tags_left = required_tags.difference(tags(exam_questions))
+  tags_left = required_tags - tags(exam_questions)
   raise ValueError("{0}: {1}".format(err, tags_left))
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
@@ -407,7 +407,7 @@ i.e.~\(Q_i\subset E\).
 However, sometimes we want to check this manually.
 Thus we let
 <<check if the question is good>>=
-if not args["manual"] and not question.get_tags().issubset(required_tags):
+if not args["manual"] and not question.get_tags() <= required_tags:
   <<remove the question so we don't select it again>>
   continue
 @ We add a command-line option for fully manual mode:
@@ -428,7 +428,7 @@ a subset as the empty set is a subset of any set.
 Thus we let
 <<check if the question is good>>=
 elif len(question.get_tags()) > 0 and \
-    question.get_tags().issubset(tags(exam_questions)):
+    question.get_tags() <= tags(exam_questions):
   <<remove the question so we don't select it again>>
   continue
 @
@@ -456,7 +456,7 @@ We can ask for this when we check the question in
 So we let
 <<check if the question is good>>=
 elif args["interactive"]:
-  remaining_tags = required_tags.difference(tags(exam_questions))
+  remaining_tags = required_tags - tags(exam_questions)
   user_tags = get_tags_from_user(question, remaining_tags, args["prettify"])
   if len(user_tags) == 0:
     <<remove the question so we don't select it again>>
