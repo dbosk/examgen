@@ -39,7 +39,7 @@
   Department of Information and Communication Systems,\\
   Mid Sweden University, SE-851\,70 Sundsvall
 }
-\date{Version 1.1}
+\date{Version 2.0}
 
 \begin{document}
 \maketitle
@@ -76,6 +76,7 @@ We will use the following structure:
 <<examgen.py>>=
 #!/usr/bin/env python3
 <<imports>>
+<<constants>>
 <<classes>>
 <<functions>>
 def main(argv):
@@ -435,149 +436,120 @@ elif len(question.get_tags()) > 0 and \
 
 \subsection{Human Intervention}
 
-Some of the questions might not be tagged.
+At times we might want some human intervention.
+Some of the questions might not be tagged, or not suitably tagged.
+Some questions might be good starting points for better questions.
 Since the selection is randomized, we might want to have some human 
 intervention to guarantee a better selection.
-Thus we can ask the user for approval for each question.
-Since this is a feature we might optionally want, we can add a command-line 
+We will do this by opening the question for editing in the user's favourite 
+editor.
+This will allow the user to edit the question text and its tags.
+In essence, the user can now use the exam generator to generate a list of 
+questions to use as inspiration for a new exam.
+
+Since this is a feature we might only want occasionally, we add a command-line 
 argument to enable it:
 <<parse arguments>>=
 argp.add_argument(
   "-i", "--interactive",
   default=False, action="store_true",
   help="Turns interactive mode on, \
-    lets you modify each qualifying question's tags")
-@
-
-One way to implement the approval is to ask the user to give the tags the 
-question satisfies; if none, then the question is discarded.
-We can ask for this when we check the question in
+    lets you edit each qualifying question with ${EDITOR}")
+@ We can add the interaction when we check the question in
 [[<<check if the question is good>>]].
-So we let
+We call a function which returns a possibly new version of the question if the 
+user accepts it, or [[None]] if the user rejects the question.
 <<check if the question is good>>=
 elif args["interactive"]:
-  remaining_tags = required_tags - tags(exam_questions)
-  user_tags = get_tags_from_user(question, remaining_tags, args["prettify"])
-  if len(user_tags) == 0:
+  new_question = edit_question(question, required_tags, exam_questions)
+  if new_question is not None:
+    <<remove the question so we don't select it again>>
+    question = new_question
+  else:
     <<remove the question so we don't select it again>>
     continue
-  else:
-    question.set_tags(set(user_tags.split()))
-    <<add the question to the exam>>
-@ This requires a [[set_tags]] method in the [[Question]] class.
-<<question methods>>=
-def set_tags(self, new_tags):
-  self.__tags = new_tags
-  <<update tags in the label>>
-@
-
-If the user changes the tags of a question, then we would like to update the 
-question with the new tag set.
-This is what we want to do with the [[<<update tags in the label>>]] code 
-block.
-The label and tags are part of the question text, so we need to replace the old
-text with new.
-We can use the same [[<<question tags regex pattern>>]] as before to find the 
-label containing the tags, then replace the whole thing with the new tag set.
-<<update tags in the label>>=
-<<question tags regex pattern>>
-label = re.search(question_tags_pattern, self.__code)
-if label is not None:
-  self.__code = self.__code.replace(label.group(), "\\label{q:" + \
-    ":".join(new_tags) + "}")
-@
-
-We use the function [[get_tags_from_user]] to get the set of tags for 
-a question from the user.
-As hinted above we define the function as follows:
+@ The [[edit_question]] function is defined as follows.
 <<functions>>=
-def get_tags_from_user(question, remaining_tags, prettify):
-  <<get tags from user>>
-  return question_tags
-@ The reason we need the parameter [[remaining_tags]] is simply for usability, 
-to remind the user of what has not yet been covered.
-The parameter [[prettify]] specifies if we want the code to be prettified 
-before presented to the user.
-So the body of the function will be
-<<get tags from user>>=
-<<present the question>>
-<<present the remaining tags>>
-<<input tags from user>>
+def edit_question(question, required_tags, exam_questions):
+  <<open the question in the editor>>
+  <<ask the user to accept, edit again or reject>>
 @
 
-\subsubsection{Presenting the Question}
+\subsubsection{Open the Question in the User's Editor}
 
-We have several options for presenting the question to the user.
-First, we can just print the code.
-Second, we can prettify the code in some way.
-We will use a command-line argument for enabling prettifying of the code:
-<<parse arguments>>=
-argp.add_argument(
-  "-p", "--prettify",
-  default=False, action="store_true",
-  help="Turns on prettifying of code in interactive mode")
-@ This yields the following:
-<<present the question>>=
-print("QUESTION ######################################################")
-if prettify:
-  <<prettify code>>
-else:
-  print("%s" % question.get_code())
-@
-
-We can use detex(1) to prettify the code in the terminal.
-To do this we use the [[subprocess]] module:
+To open the question for editing in the user's editor, we have to write the 
+question to a temporary file and open that file with the editor.
+Then we read the contents back to process it.
+<<open the question in the editor>>=
+<<create a temporary file>>
+<<execute the editor with file as argument>>
+<<read the file contents back>>
+@ We will use Python's interface to the operating system to create a temporary 
+file in the proper way:
+<<create a temporary file>>=
+fd, filename = tempfile.mkstemp()
+file = os.fdopen(fd, "w")
+<<write the question to file>>
+file.close()
+@ This requires the [[tempfile]] module.
 <<imports>>=
-import subprocess
-@ We then run the question's LaTeX code through the detex(1) process and its 
-output will be the prettified code:
-<<prettify code>>=
-prettified_code = subprocess.check_output(
-  "detex", shell=True,
-  input=bytearray(question.get_code().encode("UTF-8")))
-print("%s" % prettified_code.decode("UTF-8"))
-@
-
-\subsubsection{Presenting the Tags}
-
-Then we continue with presenting the tags.
-We want to present the remaining tags to achieve a covering:
-<<present the remaining tags>>=
-print("TAGS ######################################################")
-print("Remaining tags: ", end="")
-for t in remaining_tags:
-  print("%s " % t, end="")
-print("")
-@ The tags for the question can be presented when asking the user to correct 
-the tags.
-
-\subsubsection{Getting User Input}
-
-Once we have presented the user with the data, we want to input the user's 
-decision.
-We want to make this easy, so any tags the question already has should be 
-suggested as default.
-(So this is where we present the user with the question tags.)
-For this we will use the [[readline]] module:
+import tempfile
+@ We open the file by executing what is in the [[EDITOR]] environment variable 
+in the shell.
+<<execute the editor with file as argument>>=
+command = [os.environ.get("EDITOR", "vim"), filename]
+subprocess.run(command)
+@ This in turn requires more modules:
 <<imports>>=
-import readline
+import os, subprocess
+@ Finally we open the file when the sub-process (editor) has exited.
+When we are done with the file we remove it.
+<<read the file contents back>>=
+with open(filename, "r") as file:
+  <<read the question back from file>>
+os.unlink(filename)
 @
 
-We want to use [[readline]] to set the default value to the set of tags for the 
-question:
-<<input tags from user>>=
-qtags = ""
-for t in question.get_tags():
-  qtags += t + " "
-readline.set_startup_hook(lambda: readline.insert_text(qtags))
-@ Then we input the tags from the user, with the tags already pre-entered:
-<<input tags from user>>=
+To aid the user we do not only want to write the question code to the file, we 
+also want to include which tags are remaining for a complete cover of the tags.
+Thus, first we write the remaining tags followed by a separator and finally the
+code of the question.
+<<write the question to file>>=
+for t in (required_tags - tags(exam_questions)):
+  file.write("% remaining tag: " + t + "\n")
+file.write("\n" + REMOVE_ABOVE_SEPARATOR + "\n")
+file.write(question.get_code())
+@ We add the separator to our constants.
+<<constants>>=
+REMOVE_ABOVE_SEPARATOR = "% ----- Everything ABOVE will be REMOVED -----"
+@ Conversely we also want to read the edited file back when the user is done 
+editing.
+<<read the question back from file>>=
+question_lines = [line.strip("\n") for line in file.readlines()]
 try:
-  question_tags = input("Question tags: ")
-@ And finally we have to reset the default value for the input function:
-<<input tags from user>>=
+  question_lines = \
+    question_lines[question_lines.index(REMOVE_ABOVE_SEPARATOR)+1:]
+except ValueError:
+  pass
 finally:
-  readline.set_startup_hook()
+  question = Question("\n".join(question_lines))
+@
+
+\subsubsection{Accept, Reject or Edit Again}
+
+Now the user is supposedly done with the question, we should now provide 
+alternatives to go back to editing, accepting the edited version or reject it 
+and go to the next question.
+<<ask the user to accept, edit again or reject>>=
+action = input("[e]dit again, [a]ccept, [r]eject: ")
+while True:
+  if action in {"A", "a"}:
+    return question
+  elif action in {"R", "r"}:
+    return None
+  elif action in {"E", "e"}:
+    <<open the question in the editor>>
+  action = input("[E]dit again, [a]ccept, [r]eject: ")
 @
 
 
