@@ -153,13 +153,13 @@ two database files.
 
 Since the design allows for using old exams as database files, then we must 
 adapt our database format to this.
-We know that the exams are using the exam~\cite{exam} document class.
+We assume that the exams are using the exam~\cite{exam} document class.
 As such each question will start with the command \verb'\question' and end at 
 the beginning of the next question.
 Or in the special case of the last question, it ends with the end of the 
 [[questions]] environment.
-(See lines 87--290 in the example exam in \cref{sec:ExampleExam} for an example 
-of a [[questions]] environment.)
+However, we also want to be able to use exercises from teaching material.
+
 We can thus make use of Python's regular expressions facilities~\cite{regex}:
 <<imports>>=
 import re
@@ -167,12 +167,17 @@ import re
 match a question:
 <<set up question regex>>=
 question_code_pattern = re.compile(
-  "\\\\question(.|\n)*?(?=(\\\\question|\\\\end{questions}))",
+  "(\\\\question(.|\n)*?"
+    "(?=(\\\\question|\\\\end{questions}|\\\\begin{exercise}))|"
+  "\\\\begin{exercise}(.|\n)*?\\\\end{exercise})",
   re.MULTILINE)
 @ (See~\cite{regex-lookaround} for a treatment of zero-width assertions in 
 regular expressions.)
+The regular expression consists of two parts.
+The first part matches questions (exam format) and the second part matches 
+exercise environments.
 This expression will conveniently also include any parts or solution 
-environments used in the question.
+environments used in the exam question format.
 
 To read the questions database we need to do the following:
 <<read questions database>>=
@@ -212,13 +217,25 @@ A suitable one is to construct the question from its LaTeX code:
 <<question constructors>>=
 def __init__(self, code):
   <<question constructor body>>
-@ This LaTeX code is also a natural attribute of the class:
+@ This LaTeX code is also a natural attribute of the class.
+However, it should be on the exam question format, so for the exercise 
+environments we must do some transformation.
 <<question constructor body>>=
 self.__code = code
+if self.__code.find(r"\begin{exercise}") >= 0:
+  <<transform exercise to question form>>
 @ We also need a get-method for the code attribute:
 <<question methods>>=
 def get_code(self):
   return self.__code
+@
+
+To transform an exercise to a question we can replace the beginning of the 
+environment with the question command and simply drop the end of the 
+environment.
+<<transform exercise to question form>>=
+self.__code = self.__code.replace(r"\begin{exercise}", r"\question ")
+self.__code = self.__code.replace(r"\end{exercise}", "")
 @
 
 To be able to add a question to a set, the data structure must be <hashable>:
