@@ -287,14 +287,14 @@ self.__tags = set()
 <<filter out tags using regex>>
 @ where
 <<question tags regex pattern>>=
-question_tags_pattern = re.compile(
+question_label_pattern = re.compile(
   "\\\\label{(q|xrc):([^}]*)}",
   re.MULTILINE)
 @ (Another possible prefix is [[xrc:]], for exercise.)
 We can then extract the tags using the second group in the pattern and add the 
 tags to the set of tags:
 <<filter out tags using regex>>=
-matched_tags = question_tags_pattern.finditer(self.__code)
+matched_tags = question_label_pattern.finditer(self.__code)
 for match in matched_tags:
   self.__tags |= set(match.group(2).split(":"))
 @ This will yield [[None]] if the regular expression does not match, i.e.\ 
