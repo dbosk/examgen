@@ -432,7 +432,8 @@ if not args["manual"] and not question.get_tags() <= required_tags:
 <<parse arguments>>=
 argp.add_argument(
   "-m", "--manual", default=False, action="store_true",
-  help="Sets manual mode, disables filtering algorithm")
+  help="Sets manual mode, "
+    "disables filtering algorithm so all questions qualify")
 @
 
 We also want to guarantee that the algorithm progresses towards the stop 
@@ -470,8 +471,8 @@ argument to enable it:
 argp.add_argument(
   "-i", "--interactive",
   default=False, action="store_true",
-  help="Turns interactive mode on, \
-    lets you edit each qualifying question with ${EDITOR}")
+  help="Turns interactive mode on, "
+    "lets you edit each qualifying question with ${EDITOR}")
 @ We can add the interaction when we check the question in
 [[<<check if the question is good>>]].
 We call a function which returns a possibly new version of the question if the 
