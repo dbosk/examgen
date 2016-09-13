@@ -28,7 +28,7 @@
 \addbibresource{examgen.bib}
 
 \title{%
-  examgen: An Exam Generator
+  examgen: An exam generator
 }
 \author{Daniel Bosk}
 \affil{%
@@ -149,7 +149,7 @@ for database in args["database"]:
 redundancy, the same question should not be added twice even if it occurs in 
 two database files.
 
-\subsection{The Questions Database Format}
+\subsection{The questions database format}
 
 Since the design allows for using old exams as database files, then we must 
 adapt our database format to this.
@@ -198,7 +198,7 @@ text from [[file_contents]]:
 file_contents = file_contents[match.end():]
 @
 
-\subsection{The Question Format}
+\subsection{The question format}
 
 Now that we know the format of the question databases, this brings us to the 
 next part: the format of the actual question and how to do
@@ -256,7 +256,7 @@ questions.add(Question(match.group()))
 @ where we add the question to the set of questions.
 
 
-\section{Randomly Selecting the Questions}
+\section{Randomly selecting the questions}
 
 % XXX Add references for how to create an exam
 The purpose of this work is to construct an exam, hence there are several 
@@ -348,7 +348,7 @@ questions for the exam:
 required_tags = set(args["tags"])
 @
 
-\subsection{Handling Topics, Difficulty Levels or Intended Learning Outcomes}
+\subsection{Handling topics, difficulty levels or intended learning outcomes}
 \label{sec:selection}
 
 We now have the set of required tags \(E\) for the exam, [[required_tags]] in 
@@ -366,7 +366,7 @@ tags for the exam.
 Thus, with the suggested approach we will cover topics, all necessary 
 difficulty levels and all intended learning outcomes.
 
-\subsubsection{Finding a Covering}
+\subsubsection{Finding a covering}
 
 To find the covering of the exam \(E\), we will use the following approach:
 <<generate exam>>=
@@ -415,7 +415,7 @@ questions.discard(question)
 import random
 @
 
-\subsubsection{Checking if a Question is Good}
+\subsubsection{Checking if a question is good}
 
 The main part of the algorithm is [[<<check if the question is good>>]], and we 
 will cover that part now.
@@ -452,7 +452,7 @@ elif len(question.get_tags()) > 0 and \
   continue
 @
 
-\subsection{Human Intervention}
+\subsection{Human intervention}
 
 At times we might want some human intervention.
 Some of the questions might not be tagged, or not suitably tagged.
@@ -490,10 +490,11 @@ elif args["interactive"]:
 <<functions>>=
 def edit_question(question, required_tags, exam_questions):
   <<open the question in the editor>>
+  <<check that the question is still qualified>>
   <<ask the user to accept, edit again or reject>>
 @
 
-\subsubsection{Open the Question in the User's Editor}
+\subsubsection{Open the question in the user's editor}
 
 To open the question for editing in the user's editor, we have to write the 
 question to a temporary file and open that file with the editor.
@@ -553,7 +554,7 @@ finally:
   question = Question("\n".join(question_lines))
 @
 
-\subsubsection{Accept, Reject or Edit Again}
+\subsubsection{Accept, reject or edit again}
 
 Now the user is supposedly done with the question, we should now provide 
 alternatives to go back to editing, accepting the edited version or reject it 
@@ -571,7 +572,7 @@ while True:
 @
 
 
-\section{Generating the Output}
+\section{Generating the output}
 
 Now that we have all the questions in [[exam_questions]] (see
 [[<<generate exam>>]] above), we can move on to the problem of outputting it.
@@ -594,13 +595,13 @@ for q in exam_questions:
 \printbibliography
 
 
-\section*{An Index of the Code Blocks}
+\section*{An index of the code blocks}
 
 \nowebchunks
 
 
 \appendix
-\section{An Example Exam}
+\section{An example exam}
 \label{sec:ExampleExam}
 \lstinputlisting[numbers=left,language={[latex]tex}]{dasak-150604.tex}
 
