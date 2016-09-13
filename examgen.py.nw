@@ -39,7 +39,7 @@
   Department of Information and Communication Systems,\\
   Mid Sweden University, SE-851\,70 Sundsvall
 }
-\date{Version 2.0}
+\date{Version 2.1}
 
 \begin{document}
 \maketitle
@@ -491,7 +491,6 @@ elif args["interactive"]:
 def edit_question(question, required_tags, exam_questions):
   <<open the question in the editor>>
   <<check that the question is still qualified>>
-  <<ask the user to accept, edit again or reject>>
 @
 
 \subsubsection{Open the question in the user's editor}
@@ -554,21 +553,47 @@ finally:
   question = Question("\n".join(question_lines))
 @
 
-\subsubsection{Accept, reject or edit again}
+\subsubsection{Check that the question is still qualified}
+
+Since the user is allowed to do arbitrary edits in the question, that means 
+that the tags might have changed in such a way that the question is not 
+qualified for the exam.
+In these circumstances we must inform the user and give the user the chance to 
+correct this.
+<<check that the question is still qualified>>=
+if not question.get_tags() <= required_tags:
+  print("{0}: {1}".format(sys.argv[0],
+    "the question's tags are not a subset of the required tags"))
+  <<ask the user to reject or edit again>>
+else:
+  <<ask the user to accept, edit again or reject>>
+@
 
 Now the user is supposedly done with the question, we should now provide 
 alternatives to go back to editing, accepting the edited version or reject it 
 and go to the next question.
+Or, if the question is no longer qualified, the user must edit or reject.
 <<ask the user to accept, edit again or reject>>=
 action = input("[e]dit again, [a]ccept, [r]eject: ")
 while True:
-  if action in {"A", "a"}:
+  if action in {"A", "a", "accept"}:
     return question
-  elif action in {"R", "r"}:
+  elif action in {"R", "r", "reject"}:
     return None
-  elif action in {"E", "e"}:
-    <<open the question in the editor>>
-  action = input("[e]dit again, [a]ccept, [r]eject: ")
+  elif action in {"E", "e", "edit"}:
+    return edit_question(question, required_tags, exam_questions)
+  else:
+    action = input("[e]dit again, [a]ccept, [r]eject: ")
+@ Similarly we get
+<<ask the user to reject or edit again>>=
+action = input("[e]dit again, [r]eject: ")
+while True:
+  if action in {"R", "r", "reject"}:
+    return None
+  elif action in {"E", "e", "edit"}:
+    return edit_question(question, required_tags, exam_questions)
+  else:
+    action = input("[e]dit again, [r]eject: ")
 @
 
 
