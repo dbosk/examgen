@@ -11,8 +11,16 @@
 
 \usepackage{listings}
 \lstset{%
-  basicstyle=\footnotesize
+  basicstyle=\footnotesize,
+  numbers=left
 }
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{thmtools}
+\declaretheorem[style=definition,
+  name=Example,refname={example,examples}]{example}
 
 \usepackage{noweb}
 % Needed to relax penalty for breaking code chunks across pages, otherwise 
@@ -21,8 +29,6 @@
 \let\nwdocspar=\smallbreak
 
 \usepackage{csquotes}
-\MakeBlockQuote{<}{§}{>}
-\EnableQuotes
 
 \usepackage[natbib,style=alphabetic,backend=bibtexu]{biblatex}
 \addbibresource{examgen.bib}
@@ -179,6 +185,51 @@ exercise environments.
 This expression will conveniently also include any parts or solution 
 environments used in the exam question format.
 
+\begin{example}[The question format]
+  The regular expression in [[<<set up question regex>>]] will allow questions 
+  of which the following is an example:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{questions}
+
+\question What kind of question is this?!
+
+\question Or this:
+\begin{parts}
+  \part Or this?!
+  \part Or even this?!
+\end{parts}
+
+\question[3]
+How much wood could a woodchuck chuck if a woodchuck could chuck wood?
+\begin{solution}
+  A woodchuck would chuck no amount of wood since a woodchuck can't chuck 
+  wood.
+\end{solution}
+
+\end{questions}
+  \end{lstlisting}
+  It does not matter what surrounds the question environment.
+  The only reason it is needed is to mark the end of the last question.
+\end{example}
+
+\begin{example}[The exercise format]
+  The regular expression in [[<<set up question regex>>]] will also allow 
+  exercises of which the following is an example:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{exercise}
+  Do a few push-ups \dots
+\end{exercise}
+
+\dots
+
+\begin{exercise}
+  Now do some sit-ups \dots
+\end{exercise}
+  \end{lstlisting}
+  Similarly as for the question format: it does not matter what surrounds the 
+  environments, they can be in the middle of your slides.
+\end{example}
+
 To read the questions database we need to do the following:
 <<read questions database>>=
 <<set up question regex>>
@@ -238,7 +289,22 @@ self.__code = self.__code.replace(r"\begin{exercise}", r"\question ")
 self.__code = self.__code.replace(r"\end{exercise}", "")
 @
 
-To be able to add a question to a set, the data structure must be <hashable>:
+\begin{example}[Tranforming exercises]
+  The following exercise environment
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{exercise}
+  Enumerate all prime numbers.
+\end{exercise}
+  \end{lstlisting}
+  will be transformed into the following question
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\question
+  Enumerate all prime numbers.
+  \end{lstlisting}
+\end{example}
+
+To be able to add a question to a set, the data structure must be 
+\enquote{hashable}:
 <<question methods>>=
 def __hash__(self):
   return hash(self.__code)
@@ -308,7 +374,19 @@ self.__tags = set()
 question_label_pattern = re.compile(
   "\\\\label{(q|xrc):([^}]*)}",
   re.MULTILINE)
-@ (Another possible prefix is [[xrc:]], for exercise.)
+@
+
+\begin{example}[Tags in label]
+  The regular expression above will allow questions to be tagged by a label, 
+  for instance:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\question\label{q:AnalyseThis}
+Analyse the following statement: exams are not a good tool for assessment, but 
+it scales well.
+  \end{lstlisting}
+  It works for both questions and exercises.
+\end{example}
+
 We can then extract the tags using the second group in the pattern and add the 
 tags to the set of tags:
 <<filter out tags using regex>>=
@@ -335,6 +413,28 @@ matched_tags = question_comment_pattern.finditer(self.__code)
 for match in matched_tags:
   self.__tags |= set(match.group(2).split(":"))
 @
+
+\begin{example}[Tags as comments]
+  This is the preferred method, it scales better and we can include the tags in
+  context:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{exercise}
+  You are going to design an authentication system:
+  \begin{enumerate}[a)]
+    % ILO: AnalyseSecurityProperties
+    % topic: crypto
+    \item Analyse the security properties you need.
+    % ILO: DesignSecureSystem
+    % topic: crypto
+    \item Starting from the security properties, combine cryptographic 
+    primitives to sketch a design of secure authenticiation system.
+  \end{enumerate}
+\end{exercise}
+  \end{lstlisting}
+  It is fine that we have the same topic twice, since we use sets redundancy is
+  not an issue.
+  This works for both questions and exercises.
+\end{example}
 
 When we generate an exam, we want to specify which tags we are interested in.
 We can do this using an argument on the command-line:
