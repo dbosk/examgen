@@ -517,7 +517,7 @@ argp.add_argument(
 @ If this option is enabled we will compose this filter with already set 
 filters.
 <<set up question filter>>=
-if args["require-new-tags"]:
+if args["require_new_tags"]:
   question_filter = \
     compose_filters(question_filter, IsNotSubset())
 @
@@ -545,7 +545,7 @@ argp.add_argument(
   help="Requires that each question has disjoint tag sets")
 @ We will simply compose this filter if enabled.
 <<set up question filter>>=
-if args["require-disjoint-questions"]:
+if args["require_disjoint_questions"]:
   question_filter = \
     compose_filters(question_filter, DisjointQuestions())
 @
@@ -577,7 +577,7 @@ argp.add_argument(
   help="Requires that each question must cover some of the required tags")
 @ If this is enabled we will compose the filter.
 <<set up question filter>>=
-if args["require-cover"]:
+if args["require_cover"]:
   question_filter = \
     compose_filters(question_filter, RequireCover(required_tags))
 @
@@ -610,7 +610,7 @@ argp.add_argument(
   help="Requires each question's tags to be a subset of the required tags")
 @ And finally we compose it if enabled.
 <<set up question filter>>=
-if args["require-superset"]:
+if args["require_superset"]:
   question_filter = \
     compose_filters(question_filter, ExactCovering(required_tags))
 @
@@ -649,7 +649,7 @@ class OpenWithEditor:
       return edit_question(question, self.__req_tags, selected_questions)
 @ Consequently we will compose this filter in the same fashion as previously.
 <<set up question filter>>=
-if argp["interactive"]:
+if args["interactive"]:
   question_filter = \
     compose_filters(question_filter, OpenWithEditor(required_tags))
 @
@@ -704,7 +704,7 @@ code of the question.
 for t in (required_tags - tags(exam_questions)):
   file.write("% remaining tag: " + t + "\n")
 file.write("\n" + REMOVE_ABOVE_SEPARATOR + "\n")
-file.write(question.get_code())
+file.write(question.code)
 @ We add the separator to our constants.
 <<constants>>=
 REMOVE_ABOVE_SEPARATOR = "% ----- Everything ABOVE will be REMOVED -----"
@@ -776,7 +776,7 @@ out.
 Hence we let
 <<output result>>=
 for q in exam_questions:
-  print("%s" % q.get_code())
+  print("%s" % q.code)
 @
 
 
