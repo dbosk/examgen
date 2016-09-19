@@ -471,9 +471,7 @@ We want to compose such functions, and to do this we can introduce a function
 which returns a new function-like object which is the composed function.
 <<functions>>=
 def compose_filters(filterA, filterB):
-  def composed_filters(question, selected_questions):
-    return filterB(filterA(question, selected_questions), selected_questions)
-  return composed_filters
+  return lambda x, y: filterB(filterA(x, y), y)
 @
 
 \subsubsection{No filtering}
@@ -540,12 +538,12 @@ class DisjointQuestions:
 We will add the following command-line option to enable this filter.
 <<parse arguments>>=
 argp.add_argument(
-  "-D", "--require-disjoint-questions",
+  "-D", "--require-disjoint",
   default=False, action="store_true",
   help="Requires that each question has disjoint tag sets")
 @ We will simply compose this filter if enabled.
 <<set up question filter>>=
-if args["require_disjoint_questions"]:
+if args["require_disjoint"]:
   question_filter = \
     compose_filters(question_filter, DisjointQuestions())
 @
@@ -605,12 +603,13 @@ class ExactCovering:
 We will add a command-line option to activate this filter.
 <<parse arguments>>=
 argp.add_argument(
-  "-E", "--require-superset",
+  "-E", "--require-exact",
   default=False, action="store_true",
-  help="Requires each question's tags to be a subset of the required tags")
+  help="Requires every question's tag set to be a subset of the required tags"
+    ", i.e. an exact cover")
 @ And finally we compose it if enabled.
 <<set up question filter>>=
-if args["require_superset"]:
+if args["require_exact"]:
   question_filter = \
     compose_filters(question_filter, ExactCovering(required_tags))
 @
