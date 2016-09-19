@@ -29,6 +29,13 @@
 \let\nwdocspar=\smallbreak
 
 \usepackage{csquotes}
+\usepackage{acro}
+\DeclareAcronym{ILO}{
+  short={ILO},
+  short-indefinite={an},
+  long={intended learning outcome},
+  long-indefinite={an},
+}
 
 \usepackage[natbib,style=alphabetic,backend=bibtexu]{biblatex}
 \addbibresource{examgen.bib}
@@ -329,8 +336,7 @@ questions.add(Question(match.group()))
 % XXX Add references for how to create an exam
 The purpose of this work is to construct an exam, hence there are several 
 aspects we need to consider.
-The exam should examine if the student has reached the intended learning 
-outcomes.
+The exam should examine if the student has reached the \acp{ILO}.
 Since we cannot examine every detail of the material treated in the course, the 
 exam usually depends on a random sample of the material covering the key 
 concepts of the course.
@@ -411,7 +417,7 @@ converted to a set.
 Keeping the tags in the label works if there are a few shortly-named tags, 
 however, this approach does not scale well.
 For this reason we also want to provide another way to supply several 
-longer-named tags, e.g.\ to have intended learning outcomes as tags.
+longer-named tags, e.g.\ to have \acp{ILO} as tags.
 We will do this by a specially crafted comment in the code of the question.
 <<question tags regex pattern>>=
 question_comment_pattern = re.compile(
