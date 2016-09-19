@@ -636,26 +636,34 @@ argp.add_argument(
   help="Turns interactive mode on, "
     "lets you edit each qualifying question with ${EDITOR}")
 @ We will create a filter which provides this interaction.
+We will need to know about the required tags to provide some help to the user, 
+e.g.\ to remind the user of the remaining required tags not already covered.
+We also need to re-filter the question after editing, to ensure that it still 
+conforms to the user's filters.
 <<classes>>=
 class OpenWithEditor:
-  def __init__(self, required_tags):
+  def __init__(self, required_tags, question_filter):
     self.__req_tags = required_tags
+    self.__filter = question_filter
 
   def __call__(self, question, selected_questions):
     if question is None:
       return None
     else:
-      return edit_question(question, self.__req_tags, selected_questions)
+      return edit_question(question, self.__req_tags, self.__filter,
+        selected_questions)
 @ Consequently we will compose this filter in the same fashion as previously.
+The only difference is that we supply the current composed filter to our 
+interactive filter.
 <<set up question filter>>=
 if args["interactive"]:
-  question_filter = \
-    compose_filters(question_filter, OpenWithEditor(required_tags))
+  question_filter = compose_filters(question_filter,
+    OpenWithEditor(required_tags, question_filter))
 @
 
 The [[edit_question]] function is defined as follows.
 <<functions>>=
-def edit_question(question, required_tags, exam_questions):
+def edit_question(question, required_tags, question_filter, exam_questions):
   <<open the question in the editor>>
   <<check that the question is still qualified>>
 @
@@ -728,10 +736,15 @@ qualified for the exam.
 In these circumstances we must inform the user and give the user the chance to 
 correct this.
 <<check that the question is still qualified>>=
-if not question.tags <= required_tags:
+filtered_question = question_filter(question, exam_questions)
+if filtered_question is None:
   print("{0}: {1}".format(sys.argv[0],
-    "the question's tags are not a subset of the required tags"))
+    "the question does not pass the filter(s)"))
   <<ask the user to reject or edit again>>
+elif filtered_question != question:
+  print("{0}: {1}".format(sys.argv[0],
+    "the question was modified by the filter(s)"))
+  <<ask the user to accept, edit filtered or unfiltered, or reject>>
 else:
   <<ask the user to accept, edit again or reject>>
 @
@@ -739,7 +752,6 @@ else:
 Now the user is supposedly done with the question, we should now provide 
 alternatives to go back to editing, accepting the edited version or reject it 
 and go to the next question.
-Or, if the question is no longer qualified, the user must edit or reject.
 <<ask the user to accept, edit again or reject>>=
 action = input("[e]dit again, [a]ccept, [r]eject: ")
 while True:
@@ -748,17 +760,36 @@ while True:
   elif action in {"R", "r", "reject"}:
     return None
   elif action in {"E", "e", "edit"}:
-    return edit_question(question, required_tags, exam_questions)
+    return edit_question(question, required_tags,
+      question_filter, exam_questions)
   else:
     action = input("[e]dit again, [a]ccept, [r]eject: ")
-@ Similarly we get
+@ If the question was modified by the filters we should act differently, we 
+need to add an option to edit the filtered or unfiltered version again.
+<<ask the user to accept, edit filtered or unfiltered, or reject>>=
+action = input("edit [f]iltered or [u]nfiltered, "
+  "[a]ccept filtered, [r]eject: ")
+while True:
+  if action in {"A", "a", "accept"}:
+    return filtered_question
+  elif action in {"R", "r", "reject"}:
+    return None
+  elif action in {"F", "f", "filtered"}:
+    return edit_question(filtered_question, required_tags, exam_questions)
+  elif action in {"U", "u", "unfiltered"}:
+    return edit_question(question, required_tags,
+      question_filter, exam_questions)
+  else:
+    action = input("[e]dit again, [a]ccept, [r]eject: ")
+@ If the question is no longer qualified, the user must edit or reject.
 <<ask the user to reject or edit again>>=
 action = input("[e]dit again, [r]eject: ")
 while True:
   if action in {"R", "r", "reject"}:
     return None
   elif action in {"E", "e", "edit"}:
-    return edit_question(question, required_tags, exam_questions)
+    return edit_question(question, required_tags,
+      question_filter, exam_questions)
   else:
     action = input("[e]dit again, [r]eject: ")
 @
