@@ -529,7 +529,7 @@ class DisjointQuestions:
   def __call__(self, question, selected_questions):
     if question is None:
       return None
-    elif question & selected_questions != set():
+    elif question.tags & tags(selected_questions) != set():
       return None
     else:
       return question
