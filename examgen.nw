@@ -376,9 +376,11 @@ As implied above, the creation of an exam depends on the required tags and the
 question universe available.
 We will actually generalize this a bit, we will use the universe of questions, 
 a predicate for stopping and a question filter.
+(The reason we include the required tags is to form a more useful error message
+in [[<<randomly select a question>>]].)
 Thus, to find a covering (generate an exam) we can do the following:
 <<functions>>=
-def examgen(questions, stop_condition, question_filter):
+def examgen(questions, required_tags, stop_condition, question_filter):
   exam_questions = set()
   while not stop_condition(exam_questions):
     <<randomly select a question>>
@@ -390,7 +392,8 @@ def examgen(questions, stop_condition, question_filter):
 <<generate exam>>=
 <<set up stop condition>>
 <<set up question filter>>
-exam_questions = examgen(questions, stop_condition, question_filter)
+exam_questions = examgen(questions, required_tags,
+  stop_condition, question_filter)
 @ We will return to the stop condition in \cref{StopConditions} and filters in, 
 first, [[<<check if the question is good>>]] and then \cref{QuestionFilters}.
 
@@ -400,7 +403,7 @@ try:
   question = random.sample(questions, 1)[0]
 except ValueError as err:
   tags_left = required_tags - tags(exam_questions)
-  raise ValueError("{0}: {1}".format(err, tags_left))
+  raise ValueError("{0}: missing {1}".format(err, tags_left))
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
 
