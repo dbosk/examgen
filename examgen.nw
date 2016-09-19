@@ -295,7 +295,15 @@ either, so we only need a readable property.
 @@property
 def tags(self):
   return self.__tags
-@
+@ To compute the set of tags for several questions we provide the following 
+function.
+<<functions>>=
+def tags(questions):
+  T = set()
+  for q in questions:
+    T |= q.tags
+  return T
+@ 
 
 To tag a question, we can use the LaTeX [[\label]] command.
 Most questions have an attached label, conventionally prefixed with [[q:]].
@@ -395,17 +403,6 @@ except ValueError as err:
   raise ValueError("{0}: {1}".format(err, tags_left))
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
-In case of an exception, we want to make the error message more useful:
-thus we add the list of tags left when the error occurred.
-Those tags, \(\bigcup_i Q_i\), are computed with the function [[tags]] defined 
-as follows:
-<<functions>>=
-def tags(questions):
-  T = set()
-  for q in questions:
-    T |= q.tags
-  return T
-@ 
 
 If no error occurred when randomly selecting a question, then we store only 
 that sample (instead of a list containing only one sample).
