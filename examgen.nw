@@ -806,7 +806,7 @@ out.
 Hence we let
 <<output result>>=
 for q in exam_questions:
-  print("%s" % q.code)
+  print("{0}".format(q.code))
 @
 
 
