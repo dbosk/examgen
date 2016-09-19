@@ -21,20 +21,25 @@ Tags are given in questions as comments on the form
 and several such lines are allowed.
 
 The generation algorithm works as follows:
+\begin{enumerate}
+\item Randomly select a question.
+\item Apply a filter to the question; if the question passes, add it to the 
+exam.
+\item Check if the stop condition is reached; if not, start from the beginning.
+\end{enumerate}
+The default stop condition is as follows.
 The set of desired tags, \(D\), is specified on the command line.
 The set of tags of the generated exam, \(E\), is the union of the set of tags 
 for each included question, \(Q_i\).
-The union must be equal to the set of desired tags.
-Thus \(E = \bigcup_i Q_i\) and \(E = D\) is the condition that must be 
-fulfilled.
-To achieve this, the algorithm randomly selects a question with tags \(Q_i\), 
-if \(Q_i\subseteq E\) or \(Q_i\cap D\neq Q_i\) the question is discarded.
-Otherwise the question adds one tag to \(E\) which brings \(E\) closer to 
-equality of \(D\).
-The algorithm ensures termination by either reaching equality or discarding all
-questions in the database.
+The union must be a superset of the set of desired tags.
+We have \(E = \bigcup_i Q_i\) and, thus, \(E\supseteq D\) is the condition that 
+must be fulfilled.
+The algorithm ensures termination by either fulfilling the stop condition or 
+discarding all questions in the database.
 
-There is also an alternative interactive mode where each question is opened in 
-the user's favourite editor.
+There is also an alternative interactive filter where each question is opened 
+in the user's favourite editor.
 When the editor exits the user is asked to accept or reject the question just 
 edited.
+
+The implementation is written as a highly modular library.
