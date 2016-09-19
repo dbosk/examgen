@@ -881,7 +881,8 @@ while True:
   elif action in {"R", "r", "reject"}:
     return None
   elif action in {"F", "f", "filtered"}:
-    return edit_question(filtered_question, required_tags, exam_questions)
+    return edit_question(filtered_question, required_tags,
+      question_filter, exam_questions)
   elif action in {"U", "u", "unfiltered"}:
     return edit_question(question, required_tags,
       question_filter, exam_questions)
