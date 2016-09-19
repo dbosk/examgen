@@ -5,9 +5,11 @@ examgen: examgen.py
 	cp $^ $@
 	chmod +x $@
 
-examgen.py: examgen.py.nw
-examgen.pdf: examgen.py.nw abstract.tex examgen.bib LICENSE
+examgen.py: examgen.nw
+
+examgen.pdf: examgen.nw abstract.tex examgen.bib LICENSE
 examgen.pdf: infosakb-150601.tex
+
 
 .PHONY: clean
 clean:

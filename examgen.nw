@@ -45,7 +45,7 @@
   Department of Information and Communication Systems,\\
   Mid Sweden University, SE-851\,70 Sundsvall
 }
-\date{Version 2.1}
+\date{Version 3.0}
 
 \begin{document}
 \maketitle
@@ -267,20 +267,22 @@ We will have at least one constructor.
 A suitable one is to construct the question from its LaTeX code:
 <<question constructors>>=
 def __init__(self, code):
+  self.__code = code
   <<question constructor body>>
-@ This LaTeX code is also a natural attribute of the class.
-However, it should be on the exam question format, so for the exercise 
-environments we must do some transformation.
+@ This makes the LaTeX code also a natural attribute of the class.
+We will use Python's properties to do this:
+<<question methods>>=
+@@property
+def code(self):
+  return self.__code
+@ Now we can let the constructor be
 <<question constructor body>>=
-self.__code = code
 if self.__code.find(r"\begin{exercise}") >= 0:
   <<transform exercise to question form>>
-@ We also need a get-method for the code attribute:
-<<question methods>>=
-def get_code(self):
-  return self.__code
 @
 
+All questions should be in question format, so for the exercise environments we 
+must do some transformation.
 To transform an exercise to a question we can replace the beginning of the 
 environment with the question command and simply drop the end of the 
 environment.
@@ -307,12 +309,12 @@ To be able to add a question to a set, the data structure must be
 \enquote{hashable}:
 <<question methods>>=
 def __hash__(self):
-  return hash(self.__code)
+  return hash(self.code)
 
 def __eq__(self, other):
   if not hasattr(other, "code"):
     return NotImplemented
-  return (self.__code == other.__code)
+  return (self.code == other.code)
 @ This also means that we are not allowed to modify the question object 
 throughout its lifetime, i.e.~the [[code]] attribute must not be modified.
 
@@ -333,10 +335,10 @@ Since we cannot examine every detail of the material treated in the course, the
 exam usually depends on a random sample of the material covering the key 
 concepts of the course.
 Thus, how we select the questions is of great importance.
-Firstly we need to identify similar questions.
+Firstly we need to identify similar questions, i.e.\ questions covering the 
+same things.
 This is covered in \cref{sec:tags}.
-Secondly we need to make a selection which covers the course in a good way, 
-both in topics and in difficulty.
+Secondly we need to make a selection which covers the course in a good way.
 In \cref{sec:selection} we describe an algorithm which solves this problem.
 
 \subsection{Tags}
@@ -353,20 +355,28 @@ Thus it makes sense to have a set of tags as an attribute for our question
 class:
 <<question constructor body>>=
 self.__tags = set()
-@ We also need a method to get this set:
+@ Since we cannot modify the question, there is no need to update the tags 
+either, so we only need a readable property.
 <<question methods>>=
-def get_tags(self):
+@@property
+def tags(self):
   return self.__tags
-@
+@ To compute the set of tags for several questions we provide the following 
+function.
+<<functions>>=
+def tags(questions):
+  T = set()
+  for q in questions:
+    T |= q.tags
+  return T
+@ 
 
 To tag a question, we can use the LaTeX [[\label]] command.
 Most questions have an attached label, conventionally prefixed with [[q:]].
 We can use this convention to add a colon separated list of tags using the 
 label command.
-(See line 87 in \cref{sec:ExampleExam} for an example.)
 This list can be extracted in the following way:
 <<question constructor body>>=
-self.__tags = set()
 <<question tags regex pattern>>
 <<filter out tags using regex>>
 @ where
@@ -390,7 +400,7 @@ it scales well.
 We can then extract the tags using the second group in the pattern and add the 
 tags to the set of tags:
 <<filter out tags using regex>>=
-matched_tags = question_label_pattern.finditer(self.__code)
+matched_tags = question_label_pattern.finditer(self.code)
 for match in matched_tags:
   self.__tags |= set(match.group(2).split(":"))
 @ This will yield [[None]] if the regular expression does not match, i.e.\ 
@@ -409,7 +419,7 @@ question_comment_pattern = re.compile(
   re.MULTILINE)
 @ Then we can take the union of these tags and those found in the label:
 <<filter out tags using regex>>=
-matched_tags = question_comment_pattern.finditer(self.__code)
+matched_tags = question_comment_pattern.finditer(self.code)
 for match in matched_tags:
   self.__tags |= set(match.group(2).split(":"))
 @
@@ -448,49 +458,44 @@ questions for the exam:
 required_tags = set(args["tags"])
 @
 
-\subsection{Handling topics, difficulty levels or intended learning outcomes}
+\subsection{Finding a covering}
 \label{sec:selection}
 
 We now have the set of required tags \(E\) for the exam, [[required_tags]] in 
 [[<<process arguments>>]] above.
 We also have the set of tags \(Q_i\) for each question \(i\), through the 
-[[get_tags()]] method in [[<<question methods>>]].
+[[tags]] property in [[<<question methods>>]].
 What we want is a set of questions \(\{ Q_i \}_i\) which cover the exam \(E\), 
-i.e.~\(E = \bigcup_i Q_i\).
+i.e.~\(E\subseteq \bigcup_i Q_i\).
 Since we do not want unnecessarily many questions on the exam, we preferably 
-want to find a minimal cover.
-However, our algorithm will not guarantee a minimal covering.
+want to find a minimal covering.
+Our algorithm will not guarantee a minimal covering, but it will ensure that no 
+two questions will cover the same thing.
 
-We can add topics, difficulty levels and intended learning outcomes as required 
-tags for the exam.
-Thus, with the suggested approach we will cover topics, all necessary 
-difficulty levels and all intended learning outcomes.
-
-\subsubsection{Finding a covering}
-
-To find the covering of the exam \(E\), we will use the following approach:
-<<generate exam>>=
-exam_questions = set()
-<<until the exam is covered>>:
-  <<randomly select a question>>
-  <<check if the question is good>>
-  <<add the question to the exam>>
-  <<remove the question so we don't select it again>>
-@
-
-Our stop condition requires us to find the set of tags of the currently chosen 
-questions (\(\{Q_i\}_i = [[exam_questions]]\)).
-We can use the following function to find \(\bigcup_i Q_i\):
+As implied above, the creation of an exam depends on the required tags and the 
+question universe available.
+We will actually generalize this a bit, we will use the universe of questions, 
+a predicate for stopping and a question filter.
+(The reason we include the required tags is to form a more useful error message
+in [[<<randomly select a question>>]].)
+Thus, to find a covering (generate an exam) we can do the following:
 <<functions>>=
-def tags(questions):
-  T = set()
-  for q in questions:
-    T |= q.get_tags()
-  return T
-@ Thus our stop condition can be formulated as follows:
-<<until the exam is covered>>=
-while required_tags != tags(exam_questions)
-@
+def examgen(questions, required_tags, stop_condition, question_filter):
+  exam_questions = set()
+  while not stop_condition(exam_questions):
+    <<randomly select a question>>
+    <<check if the question is good>>
+    <<add the question to the exam>>
+    <<remove the question so we don't select it again>>
+  return exam_questions
+@ Now we can generate an exam in the following way:
+<<generate exam>>=
+<<set up stop condition>>
+<<set up question filter>>
+exam_questions = examgen(questions, required_tags,
+  stop_condition, question_filter)
+@ We will return to the stop condition in \cref{StopConditions} and filters in, 
+first, [[<<check if the question is good>>]] and then \cref{QuestionFilters}.
 
 We can randomly select a question by
 <<randomly select a question>>=
@@ -498,12 +503,12 @@ try:
   question = random.sample(questions, 1)[0]
 except ValueError as err:
   tags_left = required_tags - tags(exam_questions)
-  raise ValueError("{0}: {1}".format(err, tags_left))
+  raise ValueError("{0}: missing {1}".format(err, tags_left))
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
-In case of an exception, we want to make the error message more useful:
-thus we add the list of tags left when the error occurred.
-If no error occurred, then we store only that sample instead of the list.
+
+If no error occurred when randomly selecting a question, then we store only 
+that sample (instead of a list containing only one sample).
 Then we can add the question to the exam by
 <<add the question to the exam>>=
 exam_questions.add(question)
@@ -515,44 +520,201 @@ questions.discard(question)
 import random
 @
 
-\subsubsection{Checking if a question is good}
-
-The main part of the algorithm is [[<<check if the question is good>>]], and we 
-will cover that part now.
-We do not want to include questions which cover topics outside the scope of the 
-exam, hence the question tags must be a subset of the exam tags, 
-i.e.~\(Q_i\subset E\).
-However, sometimes we want to check this manually.
-Thus we let
+The last thing we need to do is to [[<<check if the question is good>>]].
+For this purpose we use the [[question_filter]], i.e.\ pass each randomly 
+chosen question through the filter to see if it passes.
+The filter is allowed to modify the question, so we must handle this case too.
 <<check if the question is good>>=
-if not args["manual"] and not question.get_tags() <= required_tags:
+filtered_question = question_filter(question, exam_questions)
+if filtered_question is None:
   <<remove the question so we don't select it again>>
   continue
-@ We add a command-line option for fully manual mode:
+else:
+  question = filtered_question
+@ Different filters will be treated in \cref{QuestionFilters}.
+
+\subsection{Stop conditions}
+\label{StopConditions}
+
+The stop condition suggested above is when the required tags \(E\) is a subset 
+of the tags of the questions in the exam, \(E\subseteq \bigcup_i Q_i\).
+Now we can formulate that stop condition as:
+<<classes>>=
+class StopWhenSubset:
+  def __init__(self, required_tags):
+    self.__req_tags = required_tags
+
+  def __call__(self, selected_questions):
+    return self.__req_tags <= tags(selected_questions)
+@
+
+Now we can instantiate a stop condition.
+<<set up stop condition>>=
+stop_condition = StopWhenSubset(required_tags)
+@
+
+\subsection{Filtering questions}
+\label{QuestionFilters}
+
+The main part of the algorithm is to check if a question is good or not, i.e.\ 
+the filtering, and we will cover that part now.
+As suggested above, a filter requires two parameters:
+the question and the currently selected question.
+As a filter we will use a callable object, be it a function or an instance of 
+a callable class.
+We will discuss a few filters and how to activate them below, however, first we 
+will discuss composing filters.
+
+As indicated above, a filter requires two parameters: the question under 
+consideration and the already selected questions.
+We want to compose such functions, and to do this we can introduce a function 
+which returns a new function-like object which is the composed function.
+<<functions>>=
+def compose_filters(filterA, filterB):
+  return lambda x, y: filterB(filterA(x, y), y)
+@
+
+\subsubsection{No filtering}
+
+The most basic filter we could use will simply allow all questions to pass.
+Sometimes this is actually useful, but it is also good for illustration 
+purposes here.
+<<classes>>=
+class NoFilter:
+  def __call__(self, question, selected_questions):
+    return question
+@ We can add this as the default filter.
+<<set up question filter>>=
+question_filter = NoFilter()
+@
+
+\subsubsection{A question must add new tags}
+
+To decrease the number of questions in an exam we want to require every new 
+question to cover new tags, i.e.\ the new question is not a subset of the 
+already selected questions.
+This way we will not have several questions covering exactly the same tags, but
+they are allowed to overlap by a proper subset.
+<<classes>>=
+class IsNotSubset:
+  def __call__(self, question, selected_questions):
+    if question is None:
+      return None
+    elif question.tags <= tags(selected_questions):
+      return None
+    else:
+      return question
+@
+
+We will add a command-line option to enable this filter.
 <<parse arguments>>=
 argp.add_argument(
-  "-m", "--manual", default=False, action="store_true",
-  help="Sets manual mode, "
-    "disables filtering algorithm so all questions qualify")
+  "-N", "--require-new-tags",
+  default=False, action="store_true",
+  help="Requires that each new question adds new tags to the exam")
+@ If this option is enabled we will compose this filter with already set 
+filters.
+<<set up question filter>>=
+if args["require_new_tags"]:
+  question_filter = \
+    compose_filters(question_filter, IsNotSubset())
 @
 
-We also want to guarantee that the algorithm progresses towards the stop 
-condition.
-To accomplish this we require that the new question \(Q_j\) is not a subset of 
-the tags for all already selected questions, \(\bigcup_i Q_i\).
-However, we have a special case: if we use an old exam which is not properly 
-tagged, then we have questions with an empty tag set.
-We must take these into account as well: these questions will always be 
-a subset as the empty set is a subset of any set.
-Thus we let
-<<check if the question is good>>=
-elif len(question.get_tags()) > 0 and \
-    question.get_tags() <= tags(exam_questions):
-  <<remove the question so we don't select it again>>
-  continue
+\subsubsection{Questions must have disjoint tag sets}
+
+We can also add a stricter version of the previous filter, i.e.\ to require 
+that each question has no overlapping tags.
+<<classes>>=
+class DisjointQuestions:
+  def __call__(self, question, selected_questions):
+    if question is None:
+      return None
+    elif question & selected_questions != set():
+      return None
+    else:
+      return question
 @
 
-\subsection{Human intervention}
+We will add the following command-line option to enable this filter.
+<<parse arguments>>=
+argp.add_argument(
+  "-D", "--require-disjoint",
+  default=False, action="store_true",
+  help="Requires that each question has disjoint tag sets")
+@ We will simply compose this filter if enabled.
+<<set up question filter>>=
+if args["require_disjoint"]:
+  question_filter = \
+    compose_filters(question_filter, DisjointQuestions())
+@
+
+\subsubsection{Any covering}
+
+Now we will introduce the first filter to require that the question actually 
+contribute to the covering of the exam's tags.
+This mean that a question must have one of the required tags.
+<<classes>>=
+class RequireCover:
+  def __init__(self, required_tags):
+    self.__req_tags = required_tags
+
+  def __call__(self, question, selected_questions):
+    if question is None:
+      return None
+    elif question.tags & self.__req_tags != set():
+      return question
+    else:
+      return None
+@ This actually prevents questions with no tags.
+
+We provide the following command-line option to enable this filter.
+<<parse arguments>>=
+argp.add_argument(
+  "-C", "--require-cover",
+  default=False, action="store_true",
+  help="Requires that each question must cover some of the required tags")
+@ If this is enabled we will compose the filter.
+<<set up question filter>>=
+if args["require_cover"]:
+  question_filter = \
+    compose_filters(question_filter, RequireCover(required_tags))
+@
+
+\subsubsection{An exact covering}
+
+Usually we do not want to include questions which cover topics outside the 
+scope of the exam.
+This requires a stronger filter than the previous one, i.e.\ the question tags 
+must be a subset of the exam tags, \(Q_i\subseteq E\).
+<<classes>>=
+class ExactCovering:
+  def __init__(self, required_tags):
+    self.__req_tags = required_tags
+
+  def __call__(self, question, selected_questions):
+    if question is None:
+      return None
+    elif question.tags <= self.__req_tags:
+      return question
+    else:
+      return None
+@
+
+We will add a command-line option to activate this filter.
+<<parse arguments>>=
+argp.add_argument(
+  "-E", "--require-exact",
+  default=False, action="store_true",
+  help="Requires every question's tag set to be a subset of the required tags"
+    ", i.e. an exact covering")
+@ And finally we compose it if enabled.
+<<set up question filter>>=
+if args["require_exact"]:
+  question_filter = \
+    compose_filters(question_filter, ExactCovering(required_tags))
+@
+
+\subsubsection{Human intervention}
 
 At times we might want some human intervention.
 Some of the questions might not be tagged, or not suitably tagged.
@@ -573,27 +735,32 @@ argp.add_argument(
   default=False, action="store_true",
   help="Turns interactive mode on, "
     "lets you edit each qualifying question with ${EDITOR}")
-@ We can add the interaction when we check the question in
-[[<<check if the question is good>>]].
-We call a function which returns a possibly new version of the question if the 
-user accepts it, or [[None]] if the user rejects the question.
-<<check if the question is good>>=
-elif args["interactive"]:
-  new_question = edit_question(question, required_tags, exam_questions)
-  if new_question is not None:
-    <<remove the question so we don't select it again>>
-    question = new_question
-  else:
-    <<remove the question so we don't select it again>>
-    continue
-@ The [[edit_question]] function is defined as follows.
+@ We will create a filter which provides this interaction.
+<<classes>>=
+class OpenWithEditor:
+  def __init__(self, required_tags):
+    self.__req_tags = required_tags
+
+  def __call__(self, question, selected_questions):
+    if question is None:
+      return None
+    else:
+      return edit_question(question, self.__req_tags, selected_questions)
+@ Consequently we will compose this filter in the same fashion as previously.
+<<set up question filter>>=
+if args["interactive"]:
+  question_filter = \
+    compose_filters(question_filter, OpenWithEditor(required_tags))
+@
+
+The [[edit_question]] function is defined as follows.
 <<functions>>=
 def edit_question(question, required_tags, exam_questions):
   <<open the question in the editor>>
   <<check that the question is still qualified>>
 @
 
-\subsubsection{Open the question in the user's editor}
+\paragraph{Open the question in the user's editor}
 
 To open the question for editing in the user's editor, we have to write the 
 question to a temporary file and open that file with the editor.
@@ -636,7 +803,7 @@ code of the question.
 for t in (required_tags - tags(exam_questions)):
   file.write("% remaining tag: " + t + "\n")
 file.write("\n" + REMOVE_ABOVE_SEPARATOR + "\n")
-file.write(question.get_code())
+file.write(question.code)
 @ We add the separator to our constants.
 <<constants>>=
 REMOVE_ABOVE_SEPARATOR = "% ----- Everything ABOVE will be REMOVED -----"
@@ -653,7 +820,7 @@ finally:
   question = Question("\n".join(question_lines))
 @
 
-\subsubsection{Check that the question is still qualified}
+\paragraph{Check that the question is still qualified}
 
 Since the user is allowed to do arbitrary edits in the question, that means 
 that the tags might have changed in such a way that the question is not 
@@ -661,7 +828,7 @@ qualified for the exam.
 In these circumstances we must inform the user and give the user the chance to 
 correct this.
 <<check that the question is still qualified>>=
-if not question.get_tags() <= required_tags:
+if not question.tags <= required_tags:
   print("{0}: {1}".format(sys.argv[0],
     "the question's tags are not a subset of the required tags"))
   <<ask the user to reject or edit again>>
@@ -708,7 +875,7 @@ out.
 Hence we let
 <<output result>>=
 for q in exam_questions:
-  print("%s" % q.get_code())
+  print("%s" % q.code)
 @
 
 
