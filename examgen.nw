@@ -431,7 +431,7 @@ if filtered_question is None:
   continue
 else:
   question = filtered_question
-@ Different filters will be covered in \cref{QuestionFilters}.
+@ Different filters will be treated in \cref{QuestionFilters}.
 
 \subsection{Stop conditions}
 \label{StopConditions}
@@ -606,7 +606,7 @@ argp.add_argument(
   "-E", "--require-exact",
   default=False, action="store_true",
   help="Requires every question's tag set to be a subset of the required tags"
-    ", i.e. an exact cover")
+    ", i.e. an exact covering")
 @ And finally we compose it if enabled.
 <<set up question filter>>=
 if args["require_exact"]:
