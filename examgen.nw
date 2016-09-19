@@ -399,8 +399,7 @@ We can randomly select a question by
 try:
   question = random.sample(questions, 1)[0]
 except ValueError as err:
-  tags_left = required_tags - tags(exam_questions)
-  raise ValueError("{0}: {1}".format(err, tags_left))
+  raise ValueError("{0}: {1}".format(err, "no questions left"))
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
 
