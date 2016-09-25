@@ -237,10 +237,19 @@ How much wood could a woodchuck chuck if a woodchuck could chuck wood?
   environments, they can be in the middle of your slides.
 \end{example}
 
-To read the questions database we need to do the following:
+To read the questions database, we simply open each database, read its contents 
+and parse each question.
+In case the file does not exist we issue an error message to the user, then we 
+continue with the next file.
+This allows us to specify files that might exist in the future, see 
+\cref{ExamsForCourse} for an example.
 <<read questions database>>=
 <<set up question regex>>
-file_contents = open(database, "r").read()
+try:
+  file_contents = open(database, "r").read()
+except Exception as err:
+  print("{0}: {1}".format(sys.argv[0], err), file=sys.stderr)
+  continue
 <<match a question>>
 while match:
   <<parse question>>
@@ -914,6 +923,11 @@ Hence we let
 for q in exam_questions:
   print("{0}".format(q.code))
 @
+
+
+\section{Usage examples}
+
+\input{exam.tex}
 
 
 \section*{Acknowledgements}

@@ -1,0 +1,132 @@
+There are many ways in which the above algorithm and its implementation can be 
+used.
+We will cover some examples here: how to generate an exam for a course; how to 
+generate questions for a particular \ac{ILO}.
+
+\subsection{Generating exams for a course}
+\label{ExamsForCourse}
+
+The \acp{ILO} of a course rarely changes, so usually several exams must be 
+created based on the same set of \acp{ILO}.
+This means that we would like to generate exams with the same parameters for 
+several exams, e.g.\ the same databases and the same tags.
+To make life easy we can create a makefile for the make utility, in this 
+example called [[<<exam.mk>>]].
+The file will have the following form.
+<<exam.mk>>=
+<<targets for exams>>
+
+<<intended learning outcomes>>
+<<question databases>>
+
+<<targets for exam TeX files>>
+
+INCLUDE_MAKEFILES=makefiles   # https://github.com/dbosk/makefiles.git
+include ${INCLUDE_MAKEFILES}/tex.mk
+@
+
+In this example we have a course given once a year.
+We need three exams for every year.
+This gives us something like this:
+<<targets for exams>>=
+.PHONY: 2016
+2016: exam-160603.pdf exam-160822.pdf exam-161024.pdf
+
+EXAM_SRC+=    exam-160603.tex exam-160822.tex exam-161024.tex
+
+exam-160603.pdf: exam-160603.tex
+exam-160822.pdf: exam-160822.tex
+exam-161024.pdf: exam-161024.tex
+@
+
+The interesting part of this makefile is how the TeX-files are constructed.
+We will use the exam generator.
+The benefit of using the exam generator with the make utility is that we will 
+not regenerate the exams if they already exist.
+This means that once we have generated them we will never invoke the exam 
+generator to generate them again.
+
+We have the \acp{ILO} set in the course syllabus, so we can add the 
+corresponding tags.
+<<intended learning outcomes>>=
+EXAM_TAGS+=   AnalyseCryptoProperties
+EXAM_TAGS+=   DesignSystemsByCombiningPrimitives
+# ...
+@
+
+We want to use exercises and question databases from the course material.
+The course has its content divided into modules, containing slides and 
+assignment instructions.
+We can simply add these modules.
+<<question databases>>=
+EXAM_DBS+=    modules/crypto/overview/questions.tex
+EXAM_DBS+=    modules/crypto/overivew/slides.tex
+@
+
+Now we have several approaches for the recipe for the exams.
+We will give two alternatives as examples, one fully automatic and one 
+interactive.
+The automatic recipe would simply require that each question must provide a new 
+tag to the exam (-N), also that a question must cover some of the required tags 
+(-C), and finally, that we require an exact covering (-E).
+<<automatic recipe for exam TeX files>>=
+${EXAM_SRC}:
+  examgen -d ${EXAM_DBS} -t ${EXAM_TAGS} -NCE > $@
+@ The corresponding interactive version would simply add the option to make it 
+interactive (-i).
+In this case, since we might have developed new questions in interactive mode, 
+we can also add the previous exams as question databases.
+<<interactive recipe for exam TeX files>>=
+${EXAM_SRC}:
+  examgen -d ${EXAM_DBS} ${EXAM_SRC} -t ${EXAM_TAGS} -NCEi > $@
+@ For this example we will choose
+<<targets for exam TeX files>>=
+<<interactive recipe for exam TeX files>>
+@
+
+\subsection{Generating questions for \iacl{ILO}}
+
+Now we have given and graded the exam we generated above.
+It turns out that some students only failed on one \ac{ILO}.
+In such a scenario it is unnecessary to reassess the students on all \acp{ILO},
+both for the students and for the grading examiner.
+Since we have already set up the databases to use in [[<<exam.mk>>]], we can 
+complement it with this individualized re-exam.
+
+We need to construct individualized retake exams for a set of students.
+We need a list of students, let us identify them by username.
+We will use a variable [[STUDENTS]] which contains a list of usernames.
+Next we will use that list to generate targets for each user's exam.
+We will add all these exams as a dependency to a target [[individual-exams]] so
+that the examiner can issue [[make individual-exams]] to generate all those 
+exams.
+<<targets for exams>>=
+STUDENTS?=  user1 user2 user3
+
+.PHONY: individual-exams
+$(foreach s,${STUDENTS},$(eval individual-exams: exam-${s}.pdf))
+
+$(foreach s,${STUDENTS},$(eval exam-${s}.pdf: exam-${s}.tex))
+@
+
+Now it remains to write targets for the individual exams' TeX-files.
+We need to specify which \ac{ILO} should be used for which student.
+For this we will use a variable on the form [[EXAM_TAGS-username]].
+We will use a similar [[foreach]] construction as above.
+However, we need to define target \emph{with a recipe}.
+To do this we use an alternative way of defining a variable and then use the 
+call functionality of make to generate the targets.
+<<targets for exam TeX files>>=
+define exam_tex_file
+exam-$(1).tex:
+  examgen -d ${EXAM_DBS} ${EXAM_SRC} -t ${EXAM_TAGS-$(1)} -NCi > $@
+endef
+
+$(foreach s,${STUDENTS},$(eval $(call exam_tex_file,${s})))
+@ Note that we omitted the option to have an exact covering (-E).
+The reason for this is that we might have few questions covering \emph{only} 
+the \ac{ILO} we are interested in.
+Without the option for exact covering we can thus generate an exam with only 
+one question covering the \ac{ILO} of interest and more variation, since we can 
+select from a larger population of questions.
+We also keep the interactive option to be able to adapt the questions.
