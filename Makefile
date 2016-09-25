@@ -1,19 +1,27 @@
 .PHONY: all
-all: examgen examgen.pdf
+all: examgen.pdf
 
+examgen.pdf: examgen.tex abstract.tex examgen.bib LICENSE
+examgen.pdf: exam.tex
+
+examgen.tex: examgen.nw
+exam.tex: exam.mk.nw
+
+all: examgen
+
+examgen.py: examgen.nw
 examgen: examgen.py
 	cp $^ $@
 	chmod +x $@
 
-examgen.py: examgen.nw
+all: exam.mk
 
-examgen.pdf: examgen.nw abstract.tex examgen.bib LICENSE
-examgen.pdf: infosakb-150601.tex
-
+exam.mk: exam.mk.nw
 
 .PHONY: clean
 clean:
 	${RM} examgen examgen.py examgen.pdf examgen.tex
+	${RM} exam.mk exam.tex
 
 
 PKG_NAME-main= 			examgen
