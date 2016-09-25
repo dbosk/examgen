@@ -118,6 +118,7 @@ STUDENTS?=  user1 user2 user3
 .PHONY: individual-exams
 $(foreach s,${STUDENTS},$(eval individual-exams: exam-${s}.pdf))
 
+$(foreach s,${STUDENTS},$(eval EXAM_SRC+=exam-${s}.tex))
 $(foreach s,${STUDENTS},$(eval exam-${s}.pdf: exam-${s}.tex))
 @
 
