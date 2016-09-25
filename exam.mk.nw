@@ -46,13 +46,25 @@ not regenerate the exams if they already exist.
 This means that once we have generated them we will never invoke the exam 
 generator to generate them again.
 
-We have the \acp{ILO} set in the course syllabus, so we can add the 
-corresponding tags.
+We have the \acp{ILO} set in the course syllabus, and our assessment should be 
+based on those.
+Note that the \acp{ILO} in the syllabus are for the student to \emph{pass}, 
+i.e.\ the lowest non-failed grade.
+Thus we must add tags corresponding to the other grades as well.
+We add the corresponding tags as a list.
 <<intended learning outcomes>>=
-EXAM_TAGS+=   AnalyseCryptoProperties
+EXAM_TAGS+=   AnalyseNeededCryptoProperties
 EXAM_TAGS+=   DesignSystemsByCombiningPrimitives
+EXAM_TAGS+=   EvaluateSecuritySystems
 # ...
-@
+@ We note that if a taxonomy is used (e.g.\ Bloom's or Biggs' SOLO) and the 
+questions are consequently designed using these, then one tag per \ac{ILO} is 
+sufficient.
+In our example, analyse, design and evaluate on different levels in Bloom's 
+taxonomy.
+All three \acp{ILO} are related to the design of a security system, if we 
+phrase the questions in such a way that all three aspects are always present, 
+then we can replace the three tags with only one.
 
 We want to use exercises and question databases from the course material.
 The course has its content divided into modules, containing slides and 
