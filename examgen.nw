@@ -943,10 +943,4 @@ for q in exam_questions:
 \nowebchunks
 
 
-\appendix
-\section{An example exam}
-\label{sec:ExampleExam}
-\lstinputlisting[numbers=left,language={[latex]tex}]{dasak-150604.tex}
-
-
 \end{document}
