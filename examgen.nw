@@ -804,9 +804,15 @@ file.close()
 import tempfile
 @ We open the file by executing what is in the [[EDITOR]] environment variable 
 in the shell.
+In some cases we will run with [[stdin]] and [[stdout]] redirected, this will 
+not work well when launching the editor.
+To fix this we will ensure that [[stdin]] and [[stdout]] are set to the those 
+of the controlling terminal ([[/dev/tty]]) for the subprocess (the editor).
 <<execute the editor with file as argument>>=
 command = [os.environ.get("EDITOR", "vim"), filename]
-subprocess.run(command)
+tty = os.open("/dev/tty", os.O_RDWR)
+subprocess.run(command, stdin=tty, stdout=tty, stderr=tty)
+os.close(tty)
 @ This in turn requires more modules:
 <<imports>>=
 import os, subprocess
@@ -850,15 +856,19 @@ that the tags might have changed in such a way that the question is not
 qualified for the exam.
 In these circumstances we must inform the user and give the user the chance to 
 correct this.
+We note that since standard out might be piped, we will use standard error for 
+notifying the user.
 <<check that the question is still qualified>>=
 filtered_question = question_filter(question, exam_questions)
 if filtered_question is None:
-  print("{0}: {1}".format(sys.argv[0],
-    "the question does not pass the filter(s)"))
+  print("{0}: {1}\n".format(sys.argv[0],
+    "the question does not pass the filter(s)"),
+    file=sys.stderr)
   <<ask the user to reject or edit again>>
 elif filtered_question != question:
-  print("{0}: {1}".format(sys.argv[0],
-    "the question was modified by the filter(s)"))
+  print("{0}: {1}\n".format(sys.argv[0],
+    "the question was modified by the filter(s)"),
+    file=sys.stderr)
   <<ask the user to accept, edit filtered or unfiltered, or reject>>
 else:
   <<ask the user to accept, edit again or reject>>
@@ -868,7 +878,8 @@ Now the user is supposedly done with the question, we should now provide
 alternatives to go back to editing, accepting the edited version or reject it 
 and go to the next question.
 <<ask the user to accept, edit again or reject>>=
-action = input("[e]dit again, [a]ccept, [r]eject: ")
+print("[e]dit again, [a]ccept, [r]eject: ", end="", file=sys.stderr)
+action = input()
 while True:
   if action in {"A", "a", "accept"}:
     return question
@@ -878,12 +889,14 @@ while True:
     return edit_question(question, required_tags,
       question_filter, exam_questions)
   else:
-    action = input("[e]dit again, [a]ccept, [r]eject: ")
+    print("[e]dit again, [a]ccept, [r]eject: ", end="", file=sys.stderr)
+    action = input()
 @ If the question was modified by the filters we should act differently, we 
 need to add an option to edit the filtered or unfiltered version again.
 <<ask the user to accept, edit filtered or unfiltered, or reject>>=
-action = input("edit [f]iltered or [u]nfiltered, "
-  "[a]ccept filtered, [r]eject: ")
+print("edit [f]iltered or [u]nfiltered, [a]ccept filtered, [r]eject: ",
+  end="", file=sys.stderr)
+action = input()
 while True:
   if action in {"A", "a", "accept"}:
     return filtered_question
@@ -896,10 +909,12 @@ while True:
     return edit_question(question, required_tags,
       question_filter, exam_questions)
   else:
-    action = input("[e]dit again, [a]ccept, [r]eject: ")
+    print("[e]dit again, [a]ccept, [r]eject: ", end="", file=sys.stderr)
+    action = input()
 @ If the question is no longer qualified, the user must edit or reject.
 <<ask the user to reject or edit again>>=
-action = input("[e]dit again, [r]eject: ")
+print("[e]dit again, [r]eject: ", end="", file=sys.stderr)
+action = input()
 while True:
   if action in {"R", "r", "reject"}:
     return None
@@ -907,7 +922,8 @@ while True:
     return edit_question(question, required_tags,
       question_filter, exam_questions)
   else:
-    action = input("[e]dit again, [r]eject: ")
+    print("[e]dit again, [r]eject: ", end="", file=sys.stderr)
+    action = input()
 @
 
 
@@ -919,6 +935,8 @@ So in this section we define [[<<output result>>]].
 
 The trivial solution is to just print the code for the questions to standard 
 out.
+We note that the questions are the only thing printed to standard out, since 
+everywhere else we print to standard error.
 Hence we let
 <<output result>>=
 for q in exam_questions:
