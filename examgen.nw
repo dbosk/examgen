@@ -37,7 +37,7 @@
   long-indefinite={an},
 }
 
-\usepackage[natbib,style=alphabetic,backend=bibtexu]{biblatex}
+\usepackage[natbib,style=alphabetic]{biblatex}
 \addbibresource{examgen.bib}
 
 \title{%
