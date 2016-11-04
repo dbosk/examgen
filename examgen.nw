@@ -926,6 +926,12 @@ while True:
     action = input()
 @
 
+For the above input methods, we want improved usability, so we will use the GNU
+readline version of input.
+<<imports>>=
+import readline
+@
+
 
 \section{Generating the output}
 
