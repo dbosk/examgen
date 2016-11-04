@@ -45,14 +45,10 @@
 }
 \author{Daniel Bosk}
 \affil{%
-  School of Computer Science and Communication,\\
-  KTH Royal Institute of Technology, SE-100\,44 Stockholm
-}
-\affil{%
   Department of Information and Communication Systems,\\
   Mid Sweden University, SE-851\,70 Sundsvall
 }
-\date{Version 3.0}
+\date{Version 3.1}
 
 \begin{document}
 \maketitle
