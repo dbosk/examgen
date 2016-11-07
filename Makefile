@@ -2,10 +2,10 @@
 all: examgen.pdf
 
 examgen.pdf: examgen.tex abstract.tex examgen.bib LICENSE
-examgen.pdf: exam.tex
+examgen.pdf: example.tex
 
 examgen.tex: examgen.nw
-exam.tex: exam.mk.nw
+example.tex: example.mk.nw
 
 all: examgen
 
@@ -14,14 +14,14 @@ examgen: examgen.py
 	cp $^ $@
 	chmod +x $@
 
-all: exam.mk
+all: example.mk
 
-exam.mk: exam.mk.nw
+example.mk: example.mk.nw
 
 .PHONY: clean
 clean:
 	${RM} examgen examgen.py examgen.pdf examgen.tex
-	${RM} exam.mk exam.tex
+	${RM} example.mk example.tex
 
 
 PKG_NAME-main= 			examgen

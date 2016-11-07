@@ -13,7 +13,7 @@ several exams, e.g.\ the same databases and the same tags.
 To make life easy we can create a makefile for the make utility, in this 
 example called [[<<exam.mk>>]].
 The file will have the following form.
-<<exam.mk>>=
+<<example.mk>>=
 <<targets for exams>>
 
 <<intended learning outcomes>>

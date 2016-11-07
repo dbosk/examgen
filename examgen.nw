@@ -942,7 +942,7 @@ for q in exam_questions:
 
 \section{Usage examples}
 
-\input{exam.tex}
+\input{example.tex}
 
 
 \section*{Acknowledgements}
