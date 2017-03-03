@@ -11,8 +11,16 @@
 
 \usepackage{listings}
 \lstset{%
-  basicstyle=\footnotesize
+  basicstyle=\footnotesize,
+  numbers=left
 }
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{thmtools}
+\declaretheorem[style=definition,
+  name=Example,refname={example,examples}]{example}
 
 \usepackage{noweb}
 % Needed to relax penalty for breaking code chunks across pages, otherwise 
@@ -21,10 +29,15 @@
 \let\nwdocspar=\smallbreak
 
 \usepackage{csquotes}
-\MakeBlockQuote{<}{§}{>}
-\EnableQuotes
+\usepackage{acro}
+\DeclareAcronym{ILO}{
+  short={ILO},
+  short-indefinite={an},
+  long={intended learning outcome},
+  long-indefinite={an},
+}
 
-\usepackage[natbib,style=alphabetic,backend=bibtexu]{biblatex}
+\usepackage[natbib,style=alphabetic]{biblatex}
 \addbibresource{examgen.bib}
 
 \title{%
@@ -32,14 +45,10 @@
 }
 \author{Daniel Bosk}
 \affil{%
-  School of Computer Science and Communication,\\
-  KTH Royal Institute of Technology, SE-100\,44 Stockholm
-}
-\affil{%
   Department of Information and Communication Systems,\\
   Mid Sweden University, SE-851\,70 Sundsvall
 }
-\date{Version 3.0}
+\date{Version 3.1}
 
 \begin{document}
 \maketitle
@@ -57,17 +66,13 @@
 
 The purpose of this program is to automatically generate the LaTeX code for an 
 exam based on some inputs.
-The inputs will be a database of questions, parameters on how to choose 
-questions from the database, meta-data about the exam---e.g.~course name, dates 
-etc.
+The inputs will be a database of questions and parameters on how to choose 
+questions from the database.
 
-The LaTeX code uses the exam~\cite{exam} document class.
-The idea is to have all exam questions available so that examgen(1) can 
-randomly select a number of them and put together the [[questions]] environment 
-of the exam document class.
-
-We can also let examgen(1) generate the surrounding code, i.e.~setting document 
-class, title etc.~given enough input parameters.
+The idea is to use the exam~\cite{exam} document class.
+Then we can have all exam questions available so that examgen(1) can randomly 
+select a number of them and put together the [[questions]] environment of the 
+exam document class.
 
 \subsection{Outline}
 
@@ -103,7 +108,6 @@ Basically, we need the following code blocks:
 <<parse command-line arguments>>
 <<generate exam>>
 <<output result>>
-<<clean up and exit>>
 @
 
 To parse command-line arguments we will make use of Python's
@@ -158,13 +162,14 @@ As such each question will start with the command \verb'\question' and end at
 the beginning of the next question.
 Or in the special case of the last question, it ends with the end of the 
 [[questions]] environment.
-However, we also want to be able to use exercises from teaching material.
+However, we also want to be able to use exercises from teaching material, which
+is assumed to be an exercise environment.
 
 We can thus make use of Python's regular expressions facilities~\cite{regex}:
 <<imports>>=
 import re
 @ We can use the following code block to set up a regular expression pattern to 
-match a question:
+match a question or exercise:
 <<set up question regex>>=
 question_code_pattern = re.compile(
   "(\\\\question(.|\n)*?"
@@ -179,10 +184,64 @@ exercise environments.
 This expression will conveniently also include any parts or solution 
 environments used in the exam question format.
 
-To read the questions database we need to do the following:
+\begin{example}[The question format]
+  The regular expression in [[<<set up question regex>>]] will allow questions 
+  of which the following is an example:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{questions}
+
+\question What kind of question is this?!
+
+\question Or this:
+\begin{parts}
+  \part Or this?!
+  \part Or even this?!
+\end{parts}
+
+\question[3]
+How much wood could a woodchuck chuck if a woodchuck could chuck wood?
+\begin{solution}
+  A woodchuck would chuck no amount of wood since a woodchuck can't chuck 
+  wood.
+\end{solution}
+
+\end{questions}
+  \end{lstlisting}
+  It does not matter what surrounds the question environment.
+  The only reason it is needed is to mark the end of the last question.
+\end{example}
+
+\begin{example}[The exercise format]
+  The regular expression in [[<<set up question regex>>]] will also allow 
+  exercises of which the following is an example:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{exercise}
+  Do a few push-ups \dots
+\end{exercise}
+
+\dots
+
+\begin{exercise}
+  Now do some sit-ups \dots
+\end{exercise}
+  \end{lstlisting}
+  Similarly as for the question format: it does not matter what surrounds the 
+  environments, they can be in the middle of your slides.
+\end{example}
+
+To read the questions database, we simply open each database, read its contents 
+and parse each question.
+In case the file does not exist we issue an error message to the user, then we 
+continue with the next file.
+This allows us to specify files that might exist in the future, see 
+\cref{ExamsForCourse} for an example.
 <<read questions database>>=
 <<set up question regex>>
-file_contents = open(database, "r").read()
+try:
+  file_contents = open(database, "r").read()
+except Exception as err:
+  print("{0}: {1}".format(sys.argv[0], err), file=sys.stderr)
+  continue
 <<match a question>>
 while match:
   <<parse question>>
@@ -224,15 +283,15 @@ We will use Python's properties to do this:
 @@property
 def code(self):
   return self.__code
-@ Now we can let the constructor be
+@
+
+Now we need to construct the question.
+If the question actually is an exercise environment, then we first need to 
+convert it.
 <<question constructor body>>=
 if self.__code.find(r"\begin{exercise}") >= 0:
   <<transform exercise to question form>>
-@
-
-All questions should be in question format, so for the exercise environments we 
-must do some transformation.
-To transform an exercise to a question we can replace the beginning of the 
+@ To transform an exercise to a question we can replace the beginning of the 
 environment with the question command and simply drop the end of the 
 environment.
 <<transform exercise to question form>>=
@@ -240,7 +299,22 @@ self.__code = self.__code.replace(r"\begin{exercise}", r"\question ")
 self.__code = self.__code.replace(r"\end{exercise}", "")
 @
 
-To be able to add a question to a set, the data structure must be <hashable>:
+\begin{example}[Tranforming exercises]
+  The following exercise environment
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{exercise}
+  Enumerate all prime numbers.
+\end{exercise}
+  \end{lstlisting}
+  will be transformed into the following question
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\question
+  Enumerate all prime numbers.
+  \end{lstlisting}
+\end{example}
+
+To be able to add a question to a set, the data structure must be 
+\enquote{hashable} and have an equality operator:
 <<question methods>>=
 def __hash__(self):
   return hash(self.code)
@@ -250,41 +324,29 @@ def __eq__(self, other):
     return NotImplemented
   return (self.code == other.code)
 @ This also means that we are not allowed to modify the question object 
-throughout its lifetime, i.e.~the [[code]] attribute must not be modified.
+throughout its lifetime, i.e.\ the [[code]] attribute must not be modified.
+(That is why we do not provide any method to modify it.)
 
 Now that we have everything we need to parse the question, we can thus define
 <<parse question>>=
 questions.add(Question(match.group()))
 @ where we add the question to the set of questions.
 
-
-\section{Randomly selecting the questions}
-
-% XXX Add references for how to create an exam
-The purpose of this work is to construct an exam, hence there are several 
-aspects we need to consider.
-The exam should examine if the student has reached the intended learning 
-outcomes.
-Since we cannot examine every detail of the material treated in the course, the 
-exam usually depends on a random sample of the material covering the key 
-concepts of the course.
-Thus, how we select the questions is of great importance.
-Firstly we need to identify similar questions, i.e.\ questions covering the 
-same things.
-This is covered in \cref{sec:tags}.
-Secondly we need to make a selection which covers the course in a good way.
-In \cref{sec:selection} we describe an algorithm which solves this problem.
-
 \subsection{Tags}
-\label{sec:tags}
+\label{Tags}
 
-We have handled the problem of the same question reoccurring.
-However, we still have the problem of similar questions occurring.
-These questions treat the same topic in a similar way and we must recognize 
-them as such: we don't want two questions which are too similar in an exam.
-One solution is that we mark the questions, using a system similar to tags.
-These tags can be used to identify topics, but also be used to mark the 
-difficulty level of the question.
+We have handled the problem of the same question reoccurring by defining 
+equality and adding all questions to a set.
+However, we still have the problem of similar questions occurring, i.e.\ more 
+like semantic equality.
+Questions that treat the same topic or \ac{ILO} in a similar way must be 
+recognized as such, because we don't want two questions which are too similar 
+in the same exam.
+One solution is that we tag the questions.
+
+The tags can be used to identify topics, the difficulty level of the question 
+and which \acp{ILO} it covers, they can capture the type of semantic similarity 
+we want.
 Thus it makes sense to have a set of tags as an attribute for our question 
 class:
 <<question constructor body>>=
@@ -295,8 +357,10 @@ either, so we only need a readable property.
 @@property
 def tags(self):
   return self.__tags
-@ To compute the set of tags for several questions we provide the following 
-function.
+@
+
+It will be useful to compute the set of tags for several questions, for this 
+purpose we provide the following function.
 <<functions>>=
 def tags(questions):
   T = set()
@@ -305,8 +369,15 @@ def tags(questions):
   return T
 @ 
 
-To tag a question, we can use the LaTeX [[\label]] command.
-Most questions have an attached label, conventionally prefixed with [[q:]].
+\subsubsection{Tags in the label}
+
+There are several ways we can implement how the tags are stored in the 
+question.
+We can, for instance, use the LaTeX [[\label]] command.
+(We will cover a better way shortly, this way is kept for backwards 
+compatibility and might disappear soon.)
+Most questions have an attached label, conventionally prefixed with [[q:]] and 
+followed by something that captures the content of the question.
 We can use this convention to add a colon separated list of tags using the 
 label command.
 This list can be extracted in the following way:
@@ -318,7 +389,19 @@ This list can be extracted in the following way:
 question_label_pattern = re.compile(
   "\\\\label{(q|xrc):([^}]*)}",
   re.MULTILINE)
-@ (Another possible prefix is [[xrc:]], for exercise.)
+@
+
+\begin{example}[Tags in label]
+  The regular expression above will allow questions to be tagged by a label, 
+  for instance:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\question\label{q:AnalyseThis}
+Analyse the following statement: exams are not a good tool for assessment, but 
+it scales well.
+  \end{lstlisting}
+  It works for both questions and exercises.
+\end{example}
+
 We can then extract the tags using the second group in the pattern and add the 
 tags to the set of tags:
 <<filter out tags using regex>>=
@@ -330,10 +413,12 @@ there is no label for the question.
 If there is, this will yield a Python list of tags, which is immediately 
 converted to a set.
 
+\subsubsection{Tags as comments}
+
 Keeping the tags in the label works if there are a few shortly-named tags, 
 however, this approach does not scale well.
 For this reason we also want to provide another way to supply several 
-longer-named tags, e.g.\ to have intended learning outcomes as tags.
+longer-named tags, e.g.\ to have \acp{ILO} as tags.
 We will do this by a specially crafted comment in the code of the question.
 <<question tags regex pattern>>=
 question_comment_pattern = re.compile(
@@ -345,6 +430,52 @@ matched_tags = question_comment_pattern.finditer(self.code)
 for match in matched_tags:
   self.__tags |= set(match.group(2).split(":"))
 @
+
+\begin{example}[Tags as comments]
+  This is the preferred method, it scales better and we can include the tags in
+  context:
+  \begin{lstlisting}[language={[LaTeX]TeX}]
+\begin{exercise}
+  You are going to design an authentication system:
+  \begin{enumerate}[a)]
+    % ILO: AnalyseSecurityProperties
+    % topic: crypto
+    \item Analyse the security properties you need.
+    % ILO: DesignSecureSystem
+    % topic: crypto
+    \item Starting from the security properties, combine cryptographic 
+    primitives to sketch a design of secure authenticiation system.
+  \end{enumerate}
+\end{exercise}
+  \end{lstlisting}
+  It is fine that we have the same topic twice, our use of sets ensures that 
+  redundancy is not an issue.
+  This works for both questions and exercises.
+\end{example}
+
+
+\section{Randomly selecting the questions}
+
+% XXX Add references for how to create an exam
+The purpose of this work is to construct an exam, hence there are several 
+aspects we need to consider.
+The exam should assess if the student has fulfilled the \acp{ILO} of the course 
+(at least those that are not assessed in any other way).
+Since we cannot include every detail of the material treated in the course in 
+the assessment, the exam usually depends on a random sample of the material 
+covering the \acp{ILO} of the course.
+Thus, how we select the questions is of great importance.
+Firstly, we need to identify similar questions, i.e.\ questions covering the 
+same things.
+This is covered in \cref{Tags}.
+Secondly, we need to make a selection which covers the course in a good way.
+In \cref{FindingCovering} we describe an algorithm which solves this problem in 
+general.
+Then we will discuss how to adapt its behaviour in 
+\cref{StopConditions,QuestionFilters}.
+
+\subsection{Finding a covering}
+\label{FindingCovering}
 
 When we generate an exam, we want to specify which tags we are interested in.
 We can do this using an argument on the command-line:
@@ -358,19 +489,15 @@ questions for the exam:
 required_tags = set(args["tags"])
 @
 
-\subsection{Finding a covering}
-\label{sec:selection}
-
 We now have the set of required tags \(E\) for the exam, [[required_tags]] in 
 [[<<process arguments>>]] above.
 We also have the set of tags \(Q_i\) for each question \(i\), through the 
 [[tags]] property in [[<<question methods>>]].
 What we want is a set of questions \(\{ Q_i \}_i\) which cover the exam \(E\), 
 i.e.~\(E\subseteq \bigcup_i Q_i\).
-Since we do not want unnecessarily many questions on the exam, we preferably 
-want to find a minimal covering.
-Our algorithm will not guarantee a minimal covering, but it will ensure that no 
-two questions will cover the same thing.
+We will now describe a general algorithm which takes a set of required tags, 
+a set of questions and then returns a subset of the questions which covers the 
+required tags.
 
 As implied above, the creation of an exam depends on the required tags and the 
 question universe available.
@@ -378,7 +505,7 @@ We will actually generalize this a bit, we will use the universe of questions,
 a predicate for stopping and a question filter.
 Thus, to find a covering (generate an exam) we can do the following:
 <<functions>>=
-def examgen(questions, stop_condition, question_filter):
+def examgen(questions, required_tags, stop_condition, question_filter):
   exam_questions = set()
   while not stop_condition(exam_questions):
     <<randomly select a question>>
@@ -386,29 +513,34 @@ def examgen(questions, stop_condition, question_filter):
     <<add the question to the exam>>
     <<remove the question so we don't select it again>>
   return exam_questions
-@ Now we can generate an exam in the following way:
+@ (The reason we include the required tags is to form a more useful error 
+message in [[<<randomly select a question>>]] below.)
+Now we can generate an exam in the following way:
 <<generate exam>>=
 <<set up stop condition>>
 <<set up question filter>>
-exam_questions = examgen(questions, stop_condition, question_filter)
-@ We will return to the stop condition in \cref{StopConditions} and filters in, 
-first, [[<<check if the question is good>>]] and then \cref{QuestionFilters}.
+exam_questions = examgen(questions, required_tags,
+  stop_condition, question_filter)
+@ We will return to the stop condition in \cref{StopConditions} and filters, 
+first, in [[<<check if the question is good>>]] and then in 
+\cref{QuestionFilters}.
 
 We can randomly select a question by
 <<randomly select a question>>=
 try:
   question = random.sample(questions, 1)[0]
 except ValueError as err:
-  raise ValueError("{0}: {1}".format(err, "no questions left"))
+  tags_left = required_tags - tags(exam_questions)
+  raise ValueError("{0}: missing {1}".format(err, tags_left))
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
-
 If no error occurred when randomly selecting a question, then we store only 
 that sample (instead of a list containing only one sample).
 Then we can add the question to the exam by
 <<add the question to the exam>>=
 exam_questions.add(question)
-@ Lastly we remove it from the database so we do not select it again:
+@ Lastly we remove it from the universe of questions so that we do not select 
+it again:
 <<remove the question so we don't select it again>>=
 questions.discard(question)
 @ The random selection also requires us to add the [[random]] module:
@@ -419,7 +551,8 @@ import random
 The last thing we need to do is to [[<<check if the question is good>>]].
 For this purpose we use the [[question_filter]], i.e.\ pass each randomly 
 chosen question through the filter to see if it passes.
-The filter is allowed to modify the question, so we must handle this case too.
+The filter is allowed to modify the question, so it can be a transformation, so 
+we must handle this case too.
 <<check if the question is good>>=
 filtered_question = question_filter(question, exam_questions)
 if filtered_question is None:
@@ -455,16 +588,18 @@ stop_condition = StopWhenSubset(required_tags)
 The main part of the algorithm is to check if a question is good or not, i.e.\ 
 the filtering, and we will cover that part now.
 As suggested above, a filter requires two parameters:
-the question and the currently selected question.
-As a filter we will use a callable object, be it a function or an instance of 
+the question and the currently selected questions.
+As a filter, we will use a callable object, be it a function or an instance of 
 a callable class.
 We will discuss a few filters and how to activate them below, however, first we 
-will discuss composing filters.
+will discuss filter composition.
 
-As indicated above, a filter requires two parameters: the question under 
-consideration and the already selected questions.
-We want to compose such functions, and to do this we can introduce a function 
-which returns a new function-like object which is the composed function.
+It is desirable that the filters are as simple as possible.
+Then, to form more complex filters, we should be able to compose several simple 
+filters.
+We want to compose functions, and to do this we can introduce a function 
+[[compose_filters]] which returns a new function-like object which is a filter 
+function.
 <<functions>>=
 def compose_filters(filterA, filterB):
   return lambda x, y: filterB(filterA(x, y), y)
@@ -473,8 +608,8 @@ def compose_filters(filterA, filterB):
 \subsubsection{No filtering}
 
 The most basic filter we could use will simply allow all questions to pass.
-Sometimes this is actually useful, but it is also good for illustration 
-purposes here.
+Sometimes this is actually useful, but it also illustrates the technique we 
+will continue to use for the other filters.
 <<classes>>=
 class NoFilter:
   def __call__(self, question, selected_questions):
@@ -482,7 +617,8 @@ class NoFilter:
 @ We can add this as the default filter.
 <<set up question filter>>=
 question_filter = NoFilter()
-@
+@ We note that we could have used a function instead of a callable class
+for this filter.
 
 \subsubsection{A question must add new tags}
 
@@ -512,8 +648,7 @@ argp.add_argument(
 filters.
 <<set up question filter>>=
 if args["require_new_tags"]:
-  question_filter = \
-    compose_filters(question_filter, IsNotSubset())
+  question_filter = compose_filters(question_filter, IsNotSubset())
 @
 
 \subsubsection{Questions must have disjoint tag sets}
@@ -525,7 +660,7 @@ class DisjointQuestions:
   def __call__(self, question, selected_questions):
     if question is None:
       return None
-    elif question & selected_questions != set():
+    elif question.tags & tags(selected_questions) != set():
       return None
     else:
       return question
@@ -540,15 +675,15 @@ argp.add_argument(
 @ We will simply compose this filter if enabled.
 <<set up question filter>>=
 if args["require_disjoint"]:
-  question_filter = \
-    compose_filters(question_filter, DisjointQuestions())
+  question_filter = compose_filters(question_filter, DisjointQuestions())
 @
 
 \subsubsection{Any covering}
 
 Now we will introduce the first filter to require that the question actually 
 contribute to the covering of the exam's tags.
-This mean that a question must have one of the required tags.
+This means that a question must have one of the required tags.
+As such, we also need to provide the filter with the required tags.
 <<classes>>=
 class RequireCover:
   def __init__(self, required_tags):
@@ -612,16 +747,16 @@ if args["require_exact"]:
 
 \subsubsection{Human intervention}
 
-At times we might want some human intervention.
-Some of the questions might not be tagged, or not suitably tagged.
-Some questions might be good starting points for better questions.
+At times we might want some human intervention:
+some of the questions might not be tagged, or not suitably tagged;
+some questions might be good starting points for better questions.
 Since the selection is randomized, we might want to have some human 
 intervention to guarantee a better selection.
 We will do this by opening the question for editing in the user's favourite 
 editor.
 This will allow the user to edit the question text and its tags.
-In essence, the user can now use the exam generator to generate a list of 
-questions to use as inspiration for a new exam.
+In essence, with this filter the user can now use the exam generator to 
+generate a list of questions to use as inspiration for a new exam.
 
 Since this is a feature we might only want occasionally, we add a command-line 
 argument to enable it:
@@ -632,26 +767,34 @@ argp.add_argument(
   help="Turns interactive mode on, "
     "lets you edit each qualifying question with ${EDITOR}")
 @ We will create a filter which provides this interaction.
+We will need to know about the required tags to provide some help to the user, 
+e.g.\ to remind the user of the remaining required tags not already covered.
+We also need to re-filter the question after editing, to ensure that it still 
+conforms to the user's other filters.
 <<classes>>=
 class OpenWithEditor:
-  def __init__(self, required_tags):
+  def __init__(self, required_tags, question_filter):
     self.__req_tags = required_tags
+    self.__filter = question_filter
 
   def __call__(self, question, selected_questions):
     if question is None:
       return None
     else:
-      return edit_question(question, self.__req_tags, selected_questions)
+      return edit_question(question, self.__req_tags, self.__filter,
+        selected_questions)
 @ Consequently we will compose this filter in the same fashion as previously.
+The only difference is that we supply the current composed filter to our 
+interactive filter.
 <<set up question filter>>=
 if args["interactive"]:
-  question_filter = \
-    compose_filters(question_filter, OpenWithEditor(required_tags))
+  question_filter = compose_filters(question_filter,
+    OpenWithEditor(required_tags, question_filter))
 @
 
 The [[edit_question]] function is defined as follows.
 <<functions>>=
-def edit_question(question, required_tags, exam_questions):
+def edit_question(question, required_tags, question_filter, exam_questions):
   <<open the question in the editor>>
   <<check that the question is still qualified>>
 @
@@ -675,21 +818,31 @@ file.close()
 @ This requires the [[tempfile]] module.
 <<imports>>=
 import tempfile
-@ We open the file by executing what is in the [[EDITOR]] environment variable 
-in the shell.
+@
+
+We open the file by executing what is in the [[EDITOR]] environment variable in 
+the shell.
+In some cases we will run with [[stdin]] and [[stdout]] redirected, this will 
+not work well when launching the editor.
+To fix this we will ensure that [[stdin]] and [[stdout]] are set to the those 
+of the controlling terminal ([[/dev/tty]]) for the subprocess (the editor).
 <<execute the editor with file as argument>>=
 command = [os.environ.get("EDITOR", "vim"), filename]
-subprocess.run(command)
+tty = os.open("/dev/tty", os.O_RDWR)
+subprocess.run(command, stdin=tty, stdout=tty, stderr=tty)
+os.close(tty)
 @ This in turn requires more modules:
 <<imports>>=
 import os, subprocess
-@ Finally we open the file when the sub-process (editor) has exited.
+@ Finally, we open the file when the sub-process (editor) has exited.
 When we are done with the file we remove it.
 <<read the file contents back>>=
 with open(filename, "r") as file:
   <<read the question back from file>>
 os.unlink(filename)
 @
+
+\paragraph{Write the question to file}
 
 To aid the user we do not only want to write the question code to the file, we 
 also want to include which tags are remaining for a complete cover of the tags.
@@ -723,40 +876,74 @@ that the tags might have changed in such a way that the question is not
 qualified for the exam.
 In these circumstances we must inform the user and give the user the chance to 
 correct this.
+We note that since standard out might be piped, we will use standard error for 
+notifying the user.
 <<check that the question is still qualified>>=
-if not question.tags <= required_tags:
-  print("{0}: {1}".format(sys.argv[0],
-    "the question's tags are not a subset of the required tags"))
+filtered_question = question_filter(question, exam_questions)
+if filtered_question is None:
+  print("{0}: {1}\n".format(sys.argv[0],
+    "the question does not pass the filter(s)"),
+    file=sys.stderr)
   <<ask the user to reject or edit again>>
+elif filtered_question != question:
+  print("{0}: {1}\n".format(sys.argv[0],
+    "the question was modified by the filter(s)"),
+    file=sys.stderr)
+  <<ask the user to accept, edit filtered or unfiltered, or reject>>
 else:
   <<ask the user to accept, edit again or reject>>
 @
 
-Now the user is supposedly done with the question, we should now provide 
+Now that the user is supposedly done with the question, we should provide 
 alternatives to go back to editing, accepting the edited version or reject it 
 and go to the next question.
-Or, if the question is no longer qualified, the user must edit or reject.
 <<ask the user to accept, edit again or reject>>=
-action = input("[e]dit again, [a]ccept, [r]eject: ")
+print("[e]dit again, [a]ccept, [r]eject: ", end="", file=sys.stderr)
+action = input()
 while True:
   if action in {"A", "a", "accept"}:
     return question
   elif action in {"R", "r", "reject"}:
     return None
   elif action in {"E", "e", "edit"}:
-    return edit_question(question, required_tags, exam_questions)
+    return edit_question(question, required_tags,
+      question_filter, exam_questions)
   else:
-    action = input("[e]dit again, [a]ccept, [r]eject: ")
-@ Similarly we get
+    print("[e]dit again, [a]ccept, [r]eject: ", end="", file=sys.stderr)
+    action = input()
+@ If the question was modified by the filters we should act differently, we 
+need to add an option to edit the filtered or unfiltered version again.
+<<ask the user to accept, edit filtered or unfiltered, or reject>>=
+print("edit [f]iltered or [u]nfiltered, [a]ccept filtered, [r]eject: ",
+  end="", file=sys.stderr)
+action = input()
+while True:
+  if action in {"A", "a", "accept"}:
+    return filtered_question
+  elif action in {"R", "r", "reject"}:
+    return None
+  elif action in {"F", "f", "filtered"}:
+    return edit_question(filtered_question, required_tags,
+      question_filter, exam_questions)
+  elif action in {"U", "u", "unfiltered"}:
+    return edit_question(question, required_tags,
+      question_filter, exam_questions)
+  else:
+    print("[e]dit again, [a]ccept, [r]eject: ", end="", file=sys.stderr)
+    action = input()
+@ If the question is no longer qualified, the user must edit or reject.
 <<ask the user to reject or edit again>>=
-action = input("[e]dit again, [r]eject: ")
+print("[e]dit again, [r]eject: ", end="", file=sys.stderr)
+action = input()
 while True:
   if action in {"R", "r", "reject"}:
     return None
   elif action in {"E", "e", "edit"}:
-    return edit_question(question, required_tags, exam_questions)
+    return edit_question(question, required_tags,
+      question_filter, exam_questions)
   else:
-    action = input("[e]dit again, [r]eject: ")
+    print("[e]dit again, [r]eject: ", end="", file=sys.stderr)
+    action = input()
 @
 
 
@@ -768,11 +955,18 @@ So in this section we define [[<<output result>>]].
 
 The trivial solution is to just print the code for the questions to standard 
 out.
+We note that the questions are the only thing printed to standard out, since 
+everywhere else we print to standard error.
 Hence we let
 <<output result>>=
 for q in exam_questions:
-  print("%s" % q.code)
+  print("{0}".format(q.code))
 @
+
+
+\section{Usage examples}
+
+\input{example.tex}
 
 
 \section*{Acknowledgements}
@@ -786,12 +980,6 @@ for q in exam_questions:
 \section*{An index of the code blocks}
 
 \nowebchunks
-
-
-\appendix
-\section{An example exam}
-\label{sec:ExampleExam}
-\lstinputlisting[numbers=left,language={[latex]tex}]{dasak-150604.tex}
 
 
 \end{document}
