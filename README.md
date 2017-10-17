@@ -84,7 +84,7 @@ EXAM_TAGS+=	           DesignSystemsWithCryptoProperties
 # Until you cover the desired intended learning outcomes ...
 
 q-160603.tex q-160822.tex q-161024.tex: ${MODULE_QUESTION_DBs}
-  examgen -NCEi -d ${MODULE_QUESTION_DBs} -t ${EXAM_TAGS} > $@
+	examgen -NCEi -d ${MODULE_QUESTION_DBs} -t ${EXAM_TAGS} > $@
 ```
 
 Each `exam-<date>.tex` file `\input`s the corresponding `q-<date>.tex` in the 
