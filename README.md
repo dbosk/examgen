@@ -13,7 +13,7 @@ Installation
 
 There are two options for "installing" this utility.  Either go to 
 [releases][Releases], download the code and put it in your PATH.
-Otherwise you can follow the build instructions below.
+Otherwise you can follow the [build instructions](#building) below.
 
 [Releases]: https://github.com/dbosk/examgen/releases
 
@@ -51,6 +51,8 @@ will put `examgen` in `/usr/local/bin`.
 
 In summary:
 ```
+$ git clone https://github.com/dbosk/examgen.git
+$ cd examgen
 $ git submodule update --init
 $ make examgen.pdf examgen
 $ sudo make install
@@ -67,46 +69,48 @@ directory I have a Makefile which says something along the lines of:
 .PHONY: 2016
 2016: exam-160603.pdf exam-160822.pdf exam-161024.pdf
 
-exam-161024.pdf: exam-161024.tex miunexam
-exam-160822.pdf: exam-160822.tex miunexam
-exam-160603.pdf: exam-160603.tex miunexam
+exam-161024.pdf: exam-161024.tex q-161024.tex
+exam-160822.pdf: exam-160822.tex q-160822.tex
+exam-160603.pdf: exam-160603.tex q-160603.tex
 
-MODULE_QUESTION_DBs+=   ../modules/crypto/questions.tex
-MODULE_QUESTION_DBs+=   ../modules/crypto/slides.tex
-EXAM_TAGS+=             AnalyseNeededCryptoProperties
-EXAM_TAGS+=             DesignSystemsWithCryptoProperties
+%.pdf: %.tex
+	latexmk -pdf $<
 
-# ...
+MODULE_QUESTION_DBs+=	 ../modules/crypto/questions.tex
+MODULE_QUESTION_DBs+=	 ../modules/crypto/slides.tex
+EXAM_TAGS+=	           AnalyseNeededCryptoProperties
+EXAM_TAGS+=	           DesignSystemsWithCryptoProperties
 
-new_exam_questions.tex: ${MODULE_QUESTION_DBs}
-    examgen -d ${MODULE_QUESTION_DBs} -t ${EXAM_TAGS} -i > $@
+# Until you cover the desired intended learning outcomes ...
 
-
-INCLUDE_MIUNTEX=../miuntex      # https://github.com/dbosk/miuntex
-INCLUDE_MAKEFILES=../makefiles  # https://github.com/dbosk/makefiles
-include ${INCLUDE_MAKEFILES}/tex.mk
-include ${INCLUDE_MAKEFILES}/miun.depend.mk
+q-160603.tex q-160822.tex q-161024.tex: ${MODULE_QUESTION_DBs}
+  examgen -NCEi -d ${MODULE_QUESTION_DBs} -t ${EXAM_TAGS} > $@
 ```
 
-Whenever I get the reminder that I should submit new exams for a course I just 
-run the command `make new_exam_questions.tex` in that directory, that will 
-create questions for one exam.  Then I can easily create the three exams needed 
-for the year by repeating the process.
+Each `exam-<date>.tex` file `\input`s the corresponding `q-<date>.tex` in the 
+question section.
+
+With the above `Makefile`, whenever it's time to submit the exams for the 2016 
+instance of the course, I just run the command `make 2016` in that directory.
+That will create questions for each exam.  (I can create the individual sets of 
+questions by running `make q-<date>.tex`.)
 
 What actually happens when I run that command is the following:
 
  - The exam generator will try to find questions in the files 
-   MODULE_QUESTION_DBs whose tags are subsets of the required tags 
-   specified in EXAM_TAGS. The exam needs enough questions to cover the 
-   required tags --- but no tags which are not in the required tags.
+   `MODULE_QUESTION_DBs` whose tags are subsets of the required tags specified 
+   in `EXAM_TAGS`. The exam needs enough questions to cover the required tags 
+   (the `-C` option) --- but no tags which are not in the required tags (the 
+   `-E` option). To avoid excessively many questions on the exam, we require 
+   that each question adds coverage of a non-covered required tag (the `-N` 
+   option).
 
- - The -i parameter enables the interactive (or inspirational) mode.  
-   This opens each qualifying question in the user's favourite editor, 
-   set by the EDITOR environment variable. This allows you to use the 
-   exam generator to generate questions for inspiration: you use the 
-   questions as starting points when creating new ones. But if 
-   a question truly is the perfect question you can always use the 
-   question without any modification.
+ - The `-i` parameter enables the interactive (or inspirational) mode.  This 
+   opens each qualifying question in the user's favourite editor, set by the 
+   `EDITOR` environment variable. This allows you to use the exam generator to 
+   generate questions for inspiration: you use the questions as starting points 
+   when creating new ones. But if a question truly is the perfect question you 
+   can always use the question without any modification.
 
  - The way the questions are tagged is as follows.  Each question is tagged 
    with the intended learning outcomes (ILOs) it covers --- which is what we 
@@ -116,3 +120,6 @@ What actually happens when I run that command is the following:
    AnalyseNeededCryptoProperties for E and DesignSystemsWithCryptoProperties 
    for A.
 
+For a more automated and systematic way of using `examgen`, see [the chapter on 
+exam.mk in the documentation of the 
+makefiles](https://github.com/dbosk/makefiles/releases).
