@@ -1,7 +1,8 @@
 .PHONY: all
 all: examgen.pdf
 
-examgen.pdf: examgen.tex abstract.tex examgen.bib LICENSE
+examgen.pdf: examgen.tex abstract.tex examgen.bib
+examgen.pdf: acknowledgements.tex LICENSE
 examgen.pdf: example.tex
 
 examgen.tex: examgen.nw
