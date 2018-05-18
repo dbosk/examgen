@@ -9,6 +9,10 @@
 \usepackage{hyperref}
 \usepackage[capitalize]{cleveref}
 
+\usepackage[all]{foreign}
+\renewcommand{\foreignfullfont}{}
+\renewcommand{\foreignabbrfont}{}
+
 \usepackage{listings}
 \lstset{%
   basicstyle=\footnotesize,
@@ -505,6 +509,7 @@ a predicate for stopping and a question filter.
 Thus, to find a covering (generate an exam) we can do the following:
 <<functions>>=
 def examgen(questions, required_tags, stop_condition, question_filter):
+  exam_questions = set()
   while not stop_condition(exam_questions):
     <<randomly select a question>>
     <<check if the question is good>>
@@ -514,6 +519,8 @@ def examgen(questions, required_tags, stop_condition, question_filter):
 message in [[<<randomly select a question>>]] below.)
 Note that this function will be a Python generator, not a function returning a 
 list.
+We will only use [[exam_questions]] for internal purposes, \eg the interactive 
+filter (see \cref{interactive-filter}).
 
 We can randomly select a question by
 <<randomly select a question>>=
@@ -528,8 +535,11 @@ If no error occurred when randomly selecting a question, then we store only
 that sample (instead of a list containing only one sample).
 Then we can add the question to the exam by
 <<yield the question as output>>=
+exam_questions.add(question)
 yield question
-@ Lastly we remove it from the universe of questions so that we do not select it 
+@ We use [[yield]] to provide a generator, but we must add the question to the 
+set of questions for use in some other functions.
+Lastly we remove it from the universe of questions so that we do not select it 
 again:
 <<remove the question so we don't select it again>>=
 questions.discard(question)
@@ -759,7 +769,8 @@ if args["require_exact"]:
     compose_filters(question_filter, ExactCovering(required_tags))
 @
 
-\subsubsection{Human intervention}
+\subsubsection{Human intervention}%
+\label{interactive-filter}
 
 At times we might want some human intervention:
 some of the questions might not be tagged, or not suitably tagged;
