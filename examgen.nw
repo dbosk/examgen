@@ -505,15 +505,15 @@ a predicate for stopping and a question filter.
 Thus, to find a covering (generate an exam) we can do the following:
 <<functions>>=
 def examgen(questions, required_tags, stop_condition, question_filter):
-  exam_questions = set()
   while not stop_condition(exam_questions):
     <<randomly select a question>>
     <<check if the question is good>>
-    <<add the question to the exam>>
+    <<yield the question as output>>
     <<remove the question so we don't select it again>>
-  return exam_questions
 @ (The reason we include the required tags is to form a more useful error 
 message in [[<<randomly select a question>>]] below.)
+Note that this function will be a Python generator, not a function returning a 
+list.
 
 We can randomly select a question by
 <<randomly select a question>>=
@@ -527,10 +527,10 @@ an exception.
 If no error occurred when randomly selecting a question, then we store only 
 that sample (instead of a list containing only one sample).
 Then we can add the question to the exam by
-<<add the question to the exam>>=
-exam_questions.add(question)
-@ Lastly we remove it from the universe of questions so that we do not select 
-it again:
+<<yield the question as output>>=
+yield question
+@ Lastly we remove it from the universe of questions so that we do not select it 
+again:
 <<remove the question so we don't select it again>>=
 questions.discard(question)
 @ The random selection also requires us to add the [[random]] module:
