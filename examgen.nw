@@ -9,6 +9,10 @@
 \usepackage{hyperref}
 \usepackage[capitalize]{cleveref}
 
+\usepackage[all]{foreign}
+\renewcommand{\foreignfullfont}{}
+\renewcommand{\foreignabbrfont}{}
+
 \usepackage{listings}
 \lstset{%
   basicstyle=\footnotesize,
@@ -106,8 +110,7 @@ The [[<<main body>>]] block contains the code of the main function.
 Basically, we need the following code blocks:
 <<main body>>=
 <<parse command-line arguments>>
-<<generate exam>>
-<<output result>>
+<<generate exam and output result>>
 @
 
 To parse command-line arguments we will make use of Python's
@@ -510,20 +513,14 @@ def examgen(questions, required_tags, stop_condition, question_filter):
   while not stop_condition(exam_questions):
     <<randomly select a question>>
     <<check if the question is good>>
-    <<add the question to the exam>>
+    <<yield the question as output>>
     <<remove the question so we don't select it again>>
-  return exam_questions
 @ (The reason we include the required tags is to form a more useful error 
 message in [[<<randomly select a question>>]] below.)
-Now we can generate an exam in the following way:
-<<generate exam>>=
-<<set up stop condition>>
-<<set up question filter>>
-exam_questions = examgen(questions, required_tags,
-  stop_condition, question_filter)
-@ We will return to the stop condition in \cref{StopConditions} and filters, 
-first, in [[<<check if the question is good>>]] and then in 
-\cref{QuestionFilters}.
+Note that this function will be a Python generator, not a function returning a 
+list.
+We will only use [[exam_questions]] for internal purposes, \eg the interactive 
+filter (see \cref{interactive-filter}).
 
 We can randomly select a question by
 <<randomly select a question>>=
@@ -537,10 +534,13 @@ an exception.
 If no error occurred when randomly selecting a question, then we store only 
 that sample (instead of a list containing only one sample).
 Then we can add the question to the exam by
-<<add the question to the exam>>=
+<<yield the question as output>>=
 exam_questions.add(question)
-@ Lastly we remove it from the universe of questions so that we do not select 
-it again:
+yield question
+@ We use [[yield]] to provide a generator, but we must add the question to the 
+set of questions for use in some other functions.
+Lastly we remove it from the universe of questions so that we do not select it 
+again:
 <<remove the question so we don't select it again>>=
 questions.discard(question)
 @ The random selection also requires us to add the [[random]] module:
@@ -561,6 +561,30 @@ if filtered_question is None:
 else:
   question = filtered_question
 @ Different filters will be treated in \cref{QuestionFilters}.
+
+\subsection{Generating the output}
+
+Now we can generate an exam in the following way:
+<<generate exam and output result>>=
+<<set up stop condition>>
+<<set up question filter>>
+for q in examgen(questions, required_tags,
+                 stop_condition, question_filter):
+  print("{0}".format(q.code))
+@ We will return to the stop condition in \cref{StopConditions} and filters, 
+first, in [[<<check if the question is good>>]] and then in 
+\cref{QuestionFilters}.
+
+The trivial solution is to just print the code for the questions to standard 
+out, which is what we do above.
+We note that the questions are the only thing printed to standard out, since 
+everywhere else we print to standard error.
+
+We also note that [[examgen]] is written as a Python generator.
+This means that we will print each question as it is generated, no buffering.
+The reason for this is to ensure that if the program is killed (or an error 
+occurs) during the generation, the user's modifications will not be lost since 
+they were written to standard out already.
 
 \subsection{Stop conditions}
 \label{StopConditions}
@@ -745,7 +769,8 @@ if args["require_exact"]:
     compose_filters(question_filter, ExactCovering(required_tags))
 @
 
-\subsubsection{Human intervention}
+\subsubsection{Human intervention}%
+\label{interactive-filter}
 
 At times we might want some human intervention:
 some of the questions might not be tagged, or not suitably tagged;
@@ -944,23 +969,6 @@ while True:
   else:
     print("[e]dit again, [r]eject: ", end="", file=sys.stderr)
     action = input()
-@
-
-
-\section{Generating the output}
-
-Now that we have all the questions in [[exam_questions]] (see
-[[<<generate exam>>]] above), we can move on to the problem of outputting it.
-So in this section we define [[<<output result>>]].
-
-The trivial solution is to just print the code for the questions to standard 
-out.
-We note that the questions are the only thing printed to standard out, since 
-everywhere else we print to standard error.
-Hence we let
-<<output result>>=
-for q in exam_questions:
-  print("{0}".format(q.code))
 @
 
 
