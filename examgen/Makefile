@@ -6,20 +6,18 @@ PKG_TARBALL_FILES-main= ${PKG_INSTALL_FILES-main} Makefile
 
 
 .PHONY: all
-all: examgen
+all: examgen examgen.pdf
 
 examgen.py: examgen.nw
 examgen: examgen.py
 	cp $^ $@
 	chmod +x $@
 
-
-.PHONY: all
-all: examgen.pdf
-
 examgen.pdf: examgen.tex preamble.tex abstract.tex examgen.bib
 examgen.pdf: acknowledgements.tex LICENSE
 examgen.pdf: example.tex
+
+examgen.tex: examgen.nw
 
 LICENSE: ../LICENSE
 	${LN} $< $@

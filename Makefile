@@ -1,4 +1,4 @@
-SUBDIR+= 	src
+SUBDIR+= 	examgen
 SUBDIR+= 	examples
 
 INCLUDE_MAKEFILES?=./makefiles
