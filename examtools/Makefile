@@ -13,7 +13,7 @@ examgen: examgen.py
 	cp $^ $@
 	chmod +x $@
 
-examgen.pdf: examgen.tex preamble.tex abstract.tex examgen.bib
+examgen.pdf: examgen.tex preamble.tex abstract.tex examtools.bib
 examgen.pdf: acknowledgements.tex LICENSE
 examgen.pdf: example.tex
 
