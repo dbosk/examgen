@@ -1,0 +1,45 @@
+This is a general-purpose, simple exam generator for the \LaTeX\ documentclass 
+exam~\cite{exam}.
+It reads the question database from the source code of old exams, a file with 
+questions or teaching material with exercises.
+The questions are expected to be either questions from the exam document class, 
+i.e.\ start with the
+\verb'\question'
+macro and end by the start of the next question, or be an exercise environment,
+i.e.\ \verb'\begin{exercise}'
+and
+\verb'\end{exercise}'.
+
+In each question the generator will look for tags.
+Tags can be used to tag that a question covers a specific topic or intended 
+learning outcome (or both).
+The set of tags is the union of all tags found in the body of the question.
+The tags are used to filter which questions qualify for inclusion in the exam 
+to be generated.
+Tags are given in questions as comments on the form
+\verb'% tags: tag1:...:tagN',
+and several such lines are allowed.
+
+The generation algorithm then does the following:
+\begin{enumerate}
+\item Randomly select a question.
+\item Apply a filter to the question; if the question passes, add it to the 
+exam.
+\item Check if the stop condition is reached; if not, start from the beginning.
+\end{enumerate}
+The default stop condition is as follows.
+The set of desired tags, \(D\), is specified on the command line.
+The set of tags of the generated exam, \(E\), is the union of the set of tags 
+for each included question, \(Q_i\).
+The union must be a superset of the set of desired tags.
+We have \(E = \bigcup_i Q_i\) and, thus, \(E\supseteq D\) is the condition that 
+must be fulfilled.
+The algorithm ensures termination by either fulfilling the stop condition or 
+discarding all questions in the database.
+
+There is also an alternative interactive filter where each question is opened 
+in the user's favourite editor.
+When the editor exits the user is asked to accept or reject the question just 
+edited.
+
+The implementation is written as a highly modular library.
