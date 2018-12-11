@@ -8,7 +8,7 @@ PKG_TARBALL_FILES-main= ${PKG_INSTALL_FILES-main} Makefile
 .PHONY: all
 all: examgen examgen.pdf
 
-examgen.py: examgen.nw
+examgen.py: examgen.py.nw
 examgen: examgen.py
 	cp $^ $@
 	chmod +x $@
@@ -17,7 +17,7 @@ examgen.pdf: examgen.tex preamble.tex abstract.tex examtools.bib
 examgen.pdf: acknowledgements.tex LICENSE
 examgen.pdf: example.tex
 
-examgen.tex: examgen.nw
+examgen.tex: examgen.py.nw
 
 LICENSE: ../LICENSE
 	${LN} $< $@
@@ -29,7 +29,7 @@ example.tex: ../examples/example.mk.nw
 .PHONY: clean
 clean:
 	${RM} examgen examgen.py
-	${RM} examgen.pdf
+	${RM} examgen.pdf examgen.tex
 	${RM} LICENSE
 	${RM} example.tex
 
