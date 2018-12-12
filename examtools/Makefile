@@ -22,8 +22,11 @@ examgen.tex: examgen.py.nw
 LICENSE: ../LICENSE
 	${LN} $< $@
 
-example.tex: ../examples/example.mk.nw
-	${NOWEAVE.tex}
+example.tex: ../examples/example.tex
+	${LN} $< $@
+
+../examples/example.tex:
+	${MAKE} -C $(dir $@) $(notdir $@)
 
 
 .PHONY: clean
@@ -32,6 +35,7 @@ clean:
 	${RM} examgen.pdf examgen.tex
 	${RM} LICENSE
 	${RM} example.tex
+	${MAKE} -C ../examples clean
 
 
 

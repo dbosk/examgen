@@ -5,6 +5,7 @@ all: example.mk
 .PHONY: clean distclean
 clean:
 	${RM} example.mk
+	${RM} example.tex
 
 distclean:
 	true
