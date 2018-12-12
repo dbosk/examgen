@@ -23,7 +23,7 @@ LICENSE: ../LICENSE
 	${LN} $< $@
 
 example.tex: ../examples/example.mk.nw
-	${NOWEAVE}
+	${NOWEAVE.tex}
 
 
 .PHONY: clean
