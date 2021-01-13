@@ -25,9 +25,11 @@ clean:
 	${RM} example.mk example.tex
 
 
+PREFIX?= 				/usr/local
+
 PKG_NAME-main= 			examgen
 PKG_INSTALL_FILES-main= examgen
-PKG_PREFIX-main= 		/usr/local
+PKG_PREFIX-main= 		${PREFIX}
 PKG_INSTALL_DIR-main= 	/bin
 PKG_TARBALL_FILES-main= ${PKG_INSTALL_FILES-main} Makefile
 
