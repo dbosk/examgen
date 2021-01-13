@@ -172,19 +172,25 @@ We can thus make use of Python's regular expressions facilities~\cite{regex}:
 <<imports>>=
 import re
 @ We can use the following code block to set up a regular expression pattern to 
-match a question (exam class format), problem (nada-ten format) or exercise:
+match a question (exam class format), exercise, problem (nada-ten format) or 
+question, questionmult, choice and choices environments (auto-multiple-choice 
+format):
 <<set up question regex>>=
 question_code_pattern = re.compile(
   "(\\\\question(.|\n)*?"
     "(?=(\\\\question|\\\\end{questions}|\\\\begin{exercise}))|"
   "\\\\begin{exercise}(.|\n)*?\\\\end{exercise}|"
-  "\\\\begin{problem}(.|\n)*?\\\\end{problem})",
+  "\\\\begin{problem}(.|\n)*?\\\\end{problem}|"
+  "\\\\begin{question}{\w*}(.|\n)*?\\\\end{question}|"
+  "\\\\begin{questionmult}{\w*}(.|\n)*?\\\\end{questionmult}|"
+  "\\\\begin{choice}{\w*}(.|\n)*?\\\\end{choice}|"
+  "\\\\begin{choices}{\w*}(.|\n)*?\\\\end{choices})",
   re.MULTILINE)
 @ (See~\cite{regex-lookaround} for a treatment of zero-width assertions in 
 regular expressions.)
 The regular expression consists of two parts.
 The first part matches questions (exam format) and the second part matches 
-exercise and problem environments.
+exercise, problem and question environments.
 This expression will conveniently also include any parts or solution 
 environments used inside the exam question or nada-ten problem formats.
 
