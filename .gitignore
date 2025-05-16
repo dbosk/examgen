@@ -6,6 +6,10 @@ exam.tex
 examgen.tex
 example.tex
 example.mk
+didactic.sty
+ltxobj/
+
+nothing added to commit but untracked files present (use "git add" to track)
 
 ## Core latex/pdflatex auxiliary files:
 *.aux

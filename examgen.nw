@@ -1,4 +1,8 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper,article,oneside,oldfontcommands]{memoir}
+\let\subsubsection\subsection
+\let\subsection\section
+\let\section\chapter
+
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[british]{babel}
@@ -6,18 +10,13 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage[hyphens]{url}
-\usepackage[colorlinks]{hyperref}
-\usepackage[capitalize]{cleveref}
 
 \usepackage[all]{foreign}
 \renewcommand{\foreignfullfont}{}
 \renewcommand{\foreignabbrfont}{}
 
-\usepackage{listings}
-\lstset{%
-  basicstyle=\footnotesize,
-  numbers=left
-}
+\usepackage[outputdir=ltxobj]{minted}
+\setminted{autogobble,linenos}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -40,6 +39,10 @@
 
 \usepackage[natbib,style=alphabetic]{biblatex}
 \addbibresource{examgen.bib}
+
+\usepackage{didactic}
+\usepackage[colorlinks]{hyperref}
+\usepackage[capitalize]{cleveref}
 
 \title{%
   examgen: An exam generator
@@ -134,7 +137,7 @@ args = vars(argp.parse_args(argv[1:]))
 \section{Design}
 
 Inevitably, we need to keep the exam questions in some form of database.
-Our first option is to reuse the (LaTeX code of) old exams, i.e.~one exam is 
+Our first option is to reuse the (LaTeX code of) old exams, \ie one exam is 
 considered one database file.
 Thus we need to be able to add several database files, and we must add at least 
 one.
@@ -194,7 +197,7 @@ environments used inside the exam question or nada-ten problem formats.
 \begin{example}[The question format]
   The regular expression in [[<<set up question regex>>]] will allow questions 
   of which the following is an example:
-  \begin{lstlisting}[language={[LaTeX]TeX}]
+  \begin{minted}{latex}
 \begin{questions}
 
 \question What kind of question is this?!
@@ -213,7 +216,7 @@ How much wood could a woodchuck chuck if a woodchuck could chuck wood?
 \end{solution}
 
 \end{questions}
-  \end{lstlisting}
+  \end{minted}
   It does not matter what surrounds the question environment.
   The only reason it is needed is to mark the end of the last question.
 \end{example}
@@ -221,7 +224,7 @@ How much wood could a woodchuck chuck if a woodchuck could chuck wood?
 \begin{example}[The exercise format]
   The regular expression in [[<<set up question regex>>]] will also allow 
   exercises of which the following is an example:
-  \begin{lstlisting}[language={[LaTeX]TeX}]
+  \begin{minted}{latex}
 \begin{exercise}
   Do a few push-ups \dots
 \end{exercise}
@@ -231,7 +234,7 @@ How much wood could a woodchuck chuck if a woodchuck could chuck wood?
 \begin{exercise}
   Now do some sit-ups \dots
 \end{exercise}
-  \end{lstlisting}
+  \end{minted}
   Similarly as for the question format: it does not matter what surrounds the 
   environments, they can be in the middle of your slides.
 \end{example}
@@ -308,16 +311,16 @@ self.__code = self.__code.replace(r"\end{exercise}", "")
 
 \begin{example}[Tranforming exercises]
   The following exercise environment
-  \begin{lstlisting}[language={[LaTeX]TeX}]
+  \begin{minted}{latex}
 \begin{exercise}
   Enumerate all prime numbers.
 \end{exercise}
-  \end{lstlisting}
+  \end{minted}
   will be transformed into the following question
-  \begin{lstlisting}[language={[LaTeX]TeX}]
+  \begin{minted}{latex}
 \question
   Enumerate all prime numbers.
-  \end{lstlisting}
+  \end{minted}
 \end{example}
 
 To be able to add a question to a set, the data structure must be 
@@ -331,7 +334,7 @@ def __eq__(self, other):
     return NotImplemented
   return (self.code == other.code)
 @ This also means that we are not allowed to modify the question object 
-throughout its lifetime, i.e.\ the [[code]] attribute must not be modified.
+throughout its lifetime, \ie the [[code]] attribute must not be modified.
 (That is why we do not provide any method to modify it.)
 
 Now that we have everything we need to parse the question, we can thus define
@@ -344,7 +347,7 @@ questions.add(Question(match.group()))
 
 We have handled the problem of the same question reoccurring by defining 
 equality and adding all questions to a set.
-However, we still have the problem of similar questions occurring, i.e.\ more 
+However, we still have the problem of similar questions occurring, \ie more 
 like semantic equality.
 Questions that treat the same topic or \ac{ILO} in a similar way must be 
 recognized as such, because we don't want two questions which are too similar 
@@ -401,11 +404,11 @@ question_label_pattern = re.compile(
 \begin{example}[Tags in label]
   The regular expression above will allow questions to be tagged by a label, 
   for instance:
-  \begin{lstlisting}[language={[LaTeX]TeX}]
+  \begin{minted}{latex}
 \question\label{q:AnalyseThis}
 Analyse the following statement: exams are not a good tool for assessment, but 
 it scales well.
-  \end{lstlisting}
+  \end{minted}
   It works for both questions and exercises.
 \end{example}
 
@@ -415,7 +418,7 @@ tags to the set of tags:
 matched_tags = question_label_pattern.finditer(self.code)
 for match in matched_tags:
   self.__tags |= set(match.group(2).split(":"))
-@ This will yield [[None]] if the regular expression does not match, i.e.\ 
+@ This will yield [[None]] if the regular expression does not match, \ie 
 there is no label for the question.
 If there is, this will yield a Python list of tags, which is immediately 
 converted to a set.
@@ -425,11 +428,11 @@ converted to a set.
 Keeping the tags in the label works if there are a few shortly-named tags, 
 however, this approach does not scale well.
 For this reason we also want to provide another way to supply several 
-longer-named tags, e.g.\ to have \acp{ILO} as tags.
+longer-named tags, \eg to have \acp{ILO} as tags.
 We will do this by a specially crafted comment in the code of the question.
 <<question tags regex pattern>>=
 question_comment_pattern = re.compile(
-  "% ?(tags?|ilos?|ILOs?): ?(.*)$",
+  "% ?(tags?|ilos?|ILOs?|topics?): ?(.*)$",
   re.MULTILINE)
 @ Then we can take the union of these tags and those found in the label:
 <<filter out tags using regex>>=
@@ -441,7 +444,7 @@ for match in matched_tags:
 \begin{example}[Tags as comments]
   This is the preferred method, it scales better and we can include the tags in
   context:
-  \begin{lstlisting}[language={[LaTeX]TeX}]
+  \begin{minted}{latex}
 \begin{exercise}
   You are going to design an authentication system:
   \begin{enumerate}[a)]
@@ -454,7 +457,7 @@ for match in matched_tags:
     primitives to sketch a design of secure authenticiation system.
   \end{enumerate}
 \end{exercise}
-  \end{lstlisting}
+  \end{minted}
   It is fine that we have the same topic twice, our use of sets ensures that 
   redundancy is not an issue.
   This works for both questions and exercises.
@@ -472,7 +475,7 @@ Since we cannot include every detail of the material treated in the course in
 the assessment, the exam usually depends on a random sample of the material 
 covering the \acp{ILO} of the course.
 Thus, how we select the questions is of great importance.
-Firstly, we need to identify similar questions, i.e.\ questions covering the 
+Firstly, we need to identify similar questions, \ie questions covering the 
 same things.
 This is covered in \cref{Tags}.
 Secondly, we need to make a selection which covers the course in a good way.
@@ -501,7 +504,7 @@ We now have the set of required tags \(E\) for the exam, [[required_tags]] in
 We also have the set of tags \(Q_i\) for each question \(i\), through the 
 [[tags]] property in [[<<question methods>>]].
 What we want is a set of questions \(\{ Q_i \}_i\) which cover the exam \(E\), 
-i.e.~\(E\subseteq \bigcup_i Q_i\).
+\ie\(E\subseteq \bigcup_i Q_i\).
 We will now describe a general algorithm which takes a set of required tags, 
 a set of questions and then returns a subset of the questions which covers the 
 required tags.
@@ -553,7 +556,7 @@ import random
 @
 
 The last thing we need to do is to [[<<check if the question is good>>]].
-For this purpose we use the [[question_filter]], i.e.\ pass each randomly 
+For this purpose we use the [[question_filter]], \ie pass each randomly 
 chosen question through the filter to see if it passes.
 The filter is allowed to modify the question, so it can be a transformation, so 
 we must handle this case too.
@@ -613,7 +616,7 @@ stop_condition = StopWhenSubset(required_tags)
 \subsection{Filtering questions}
 \label{QuestionFilters}
 
-The main part of the algorithm is to check if a question is good or not, i.e.\ 
+The main part of the algorithm is to check if a question is good or not, \ie 
 the filtering, and we will cover that part now.
 As suggested above, a filter requires two parameters:
 the question and the currently selected questions.
@@ -651,7 +654,7 @@ for this filter.
 \subsubsection{A question must add new tags}
 
 To decrease the number of questions in an exam we want to require every new 
-question to cover new tags, i.e.\ the new question is not a subset of the 
+question to cover new tags, \ie the new question is not a subset of the 
 already selected questions.
 This way we will not have several questions covering exactly the same tags, but
 they are allowed to overlap by a proper subset.
@@ -681,7 +684,7 @@ if args["require_new_tags"]:
 
 \subsubsection{Questions must have disjoint tag sets}
 
-We can also add a stricter version of the previous filter, i.e.\ to require 
+We can also add a stricter version of the previous filter, \ie to require 
 that each question has no overlapping tags.
 <<classes>>=
 class DisjointQuestions:
@@ -743,7 +746,7 @@ if args["require_cover"]:
 
 Usually we do not want to include questions which cover topics outside the 
 scope of the exam.
-This requires a stronger filter than the previous one, i.e.\ the question tags 
+This requires a stronger filter than the previous one, \ie the question tags 
 must be a subset of the exam tags, \(Q_i\subseteq E\).
 <<classes>>=
 class ExactCovering:
@@ -797,7 +800,7 @@ argp.add_argument(
     "lets you edit each qualifying question with ${EDITOR}")
 @ We will create a filter which provides this interaction.
 We will need to know about the required tags to provide some help to the user, 
-e.g.\ to remind the user of the remaining required tags not already covered.
+\eg to remind the user of the remaining required tags not already covered.
 We also need to re-filter the question after editing, to ensure that it still 
 conforms to the user's other filters.
 <<classes>>=

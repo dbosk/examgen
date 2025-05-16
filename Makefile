@@ -1,9 +1,13 @@
 .PHONY: all
 all: examgen.pdf
 
+LATEXFLAGS=	-shell-escape
+
 examgen.pdf: examgen.tex abstract.tex examgen.bib
 examgen.pdf: acknowledgements.tex LICENSE
 examgen.pdf: example.tex
+
+examgen.pdf: didactic.sty
 
 examgen.tex: examgen.nw
 example.tex: example.mk.nw
@@ -38,3 +42,5 @@ INCLUDE_MAKEFILES=makefiles
 include ${INCLUDE_MAKEFILES}/tex.mk
 include ${INCLUDE_MAKEFILES}/noweb.mk
 include ${INCLUDE_MAKEFILES}/pkg.mk
+INCLUDE_DIDACTIC=didactic
+include ${INCLUDE_DIDACTIC}/didactic.mk
