@@ -49,6 +49,9 @@
 \usepackage{didactic}
 \usepackage[colorlinks]{hyperref}
 \usepackage[capitalize]{cleveref}
+\crefname{chapter}{section}{sections}
+\Crefname{chapter}{Section}{Sections}
+
 
 \title{%
   \texttt{examgen}: An exam generator
