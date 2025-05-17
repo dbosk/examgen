@@ -51,7 +51,7 @@
 \usepackage[capitalize]{cleveref}
 
 \title{%
-  examgen: An exam generator
+  \texttt{examgen}: An exam generator
 }
 \author{Daniel Bosk\thanks{%
     Versions up to 3.1 (2016) were written while at the
