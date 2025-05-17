@@ -6,6 +6,7 @@ LATEXFLAGS=	-shell-escape
 examgen.pdf: examgen.tex abstract.tex examgen.bib
 examgen.pdf: acknowledgements.tex LICENSE
 examgen.pdf: example.tex
+examgen.pdf: makefiles/exam.tex
 
 examgen.pdf: didactic.sty
 
@@ -22,6 +23,9 @@ examgen: examgen.py
 all: example.mk
 
 example.mk: example.mk.nw
+
+makefiles/exam.tex: makefiles/exam.mk.nw
+	${MAKE} -C makefiles exam.tex
 
 .PHONY: clean
 clean:

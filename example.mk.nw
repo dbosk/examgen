@@ -6,8 +6,9 @@ generate questions for a particular \ac{ILO}.
 To make life easy we can create a makefile for the make utility, in this 
 example called [[<<example.mk>>]].
 We will use the [[exam.mk]] include file from 
-\citetitle{makefiles}\autocite{makefiles}, this will show even better how much 
-can be automated.
+\citetitle{makefiles}\autocite{makefiles}\footnote{%
+  The source code for that file is available in \cref{makefiles}.
+}, this will show even better how much can be automated.
 Our example makefile will then have the following structure.
 <<example.mk>>=
 <<set up for exam.mk>>

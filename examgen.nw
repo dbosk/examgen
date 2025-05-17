@@ -1001,6 +1001,20 @@ while True:
 \input{example.tex}
 
 
+\section{The makefile}\label{makefiles}
+\chapterprecis{This section is Chapter 10 in \fullcite{makefiles}.}
+
+Here is the literate source code of the makefiles used in the examples above.
+
+\let\oldsection\section
+\let\section\subsection
+\let\oldsubsection\subsection
+\let\subsection\subsubsection
+\input{makefiles/exam.tex}
+\let\section\oldsection
+\let\subsection\oldsubsection
+
+
 \section*{Acknowledgements}
 
 \input{acknowledgements.tex}
