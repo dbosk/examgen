@@ -5,6 +5,7 @@ LATEXFLAGS=	-shell-escape
 
 examgen.pdf: examgen.tex abstract.tex examgen.bib
 examgen.pdf: acknowledgements.tex LICENSE
+examgen.pdf: examgen.py
 examgen.pdf: example.tex
 examgen.pdf: makefiles/exam.tex
 
