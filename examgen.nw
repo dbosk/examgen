@@ -53,10 +53,15 @@
 \title{%
   examgen: An exam generator
 }
-\author{Daniel Bosk}
+\author{Daniel Bosk\thanks{%
+    Versions up to 3.1 (2016) were written while at the
+    Department of Information and Communication Systems,
+    Mid Sweden University, SE-851\,70 Sundsvall.
+    Fully at KTH since 2020.
+  }}
 \affil{%
-  Department of Information and Communication Systems,\\
-  Mid Sweden University, SE-851\,70 Sundsvall
+  School of Electrical Engineering and Computer Science,\\
+  KTH Royal Institute of Technology, SE-100\,44 Stockholm
 }
 \date{Version 4.0}
 
