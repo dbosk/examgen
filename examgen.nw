@@ -18,6 +18,10 @@
 \usepackage[outputdir=ltxobj]{minted}
 \setminted{autogobble,linenos}
 
+\usepackage{pythontex}
+\setpythontexoutputdir{.}
+\setpythontexworkingdir{..}
+
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -91,6 +95,11 @@ The idea is to use the exam\autocite{exam} document class.
 Then we can have all exam questions available so that examgen(1) can randomly 
 select a number of them and put together the [[questions]] environment of the 
 exam document class.
+
+What we want to achieve is the following:
+\begin{pycode}
+didactic_shell(["examgen", "--help"])
+\end{pycode}
 
 \subsection{Outline}
 
