@@ -111,21 +111,25 @@ We will use the following structure:
 <<constants>>
 <<classes>>
 <<functions>>
+
 def main(argv):
+  """The main function that runs the CLI."""
   <<main body>>
+
 if __name__ == "__main__":
   try:
     sys.exit(main(sys.argv))
   except Exception as err:
-    print("{0}: {1}".format(sys.argv[0], err), file=sys.stderr)
+    print(f"{sys.argv[0]}: {err}", file=sys.stderr)
     sys.exit(1)
 @ Then we will successively specify what these mean.
 The [[<<imports>>]] will contain our imported modules.
 For instance, since we use [[sys.argv]] and [[sys.exit]] above we'll need to 
-add
+add the [[sys]] module to our imports:
 <<imports>>=
 import sys
-@ to [[<<imports>>]].
+@
+
 The code blocks [[<<classes>>]] and [[<<functions>>]] will contain our classes 
 and functions, respectively.
 
@@ -166,9 +170,10 @@ Thus we need to be able to add several database files, and we must add at least
 one.
 We will do that by adding a database argument to the program:
 <<parse arguments>>=
-argp.add_argument(
-  "-d", "--database", nargs="+",
-  required=True, help="Adds a questions database to use")
+argp.add_argument("-d", "--database",
+                  nargs="+",
+                  required=True,
+                  help="Adds a questions database to use")
 @ This will give us a Python list containing all the names, so we can read all 
 questions in each database:
 <<process arguments>>=
@@ -204,14 +209,15 @@ or question, questionmult, choice and choices environments
 <<set up question regex>>=
 question_code_pattern = re.compile(
   "(\\\\question(.|\n)*?"
-    "(?=(\\\\question|\\\\end{questions}|\\\\begin{exercise}))|"
-  "\\\\begin{exercise}(.|\n)*?\\\\end{exercise}|"
-  "\\\\begin{problem}(.|\n)*?\\\\end{problem}|"
-  "\\\\begin{question}{\w*}(.|\n)*?\\\\end{question}|"
-  "\\\\begin{questionmult}{\w*}(.|\n)*?\\\\end{questionmult}|"
-  "\\\\begin{choice}{\w*}(.|\n)*?\\\\end{choice}|"
-  "\\\\begin{choices}{\w*}(.|\n)*?\\\\end{choices})",
-  re.MULTILINE)
+    "(?=(\\\\question|\\\\end{questions}|\\\\begin{exercise}))"
+  "|\\\\begin{exercise}(.|\n)*?\\\\end{exercise}"
+  "|\\\\begin{problem}(.|\n)*?\\\\end{problem}"
+  "|\\\\begin{question}{\w*}(.|\n)*?\\\\end{question}"
+  "|\\\\begin{questionmult}{\w*}(.|\n)*?\\\\end{questionmult}"
+  "|\\\\begin{choice}{\w*}(.|\n)*?\\\\end{choice}"
+  "|\\\\begin{choices}{\w*}(.|\n)*?\\\\end{choices})",
+  re.MULTILINE
+)
 @ The regular expression consists of two parts.
 The first part matches questions (exam format) and the second part matches 
 exercise, problem and question environments.
@@ -274,7 +280,7 @@ This allows us to specify files that might exist in the future, see
 try:
   file_contents = open(database, "r").read()
 except Exception as err:
-  print("{0}: {1}".format(sys.argv[0], err), file=sys.stderr)
+  print(f"{sys.argv[0]}: {err}", file=sys.stderr)
   continue
 <<match a question>>
 while match:
@@ -301,6 +307,9 @@ meta-data.
 One solution is to use a class:
 <<classes>>=
 class Question:
+  """
+  Represents a question.
+  """
   <<question constructors>>
   <<question methods>>
 @
@@ -309,6 +318,9 @@ We will have at least one constructor.
 A suitable one is to construct the question from its LaTeX code:
 <<question constructors>>=
 def __init__(self, code):
+  """
+  Constructs a queston from its source code.
+  """
   self.__code = code
   <<question constructor body>>
 @ This makes the LaTeX code also a natural attribute of the class.
@@ -354,9 +366,10 @@ def __hash__(self):
   return hash(self.code)
 
 def __eq__(self, other):
-  if not hasattr(other, "code"):
-    return NotImplemented
-  return (self.code == other.code)
+  """
+  Compares two objects for equality by comparing hashes.
+  """
+  return hash(self) == hash(other)
 @ This also means that we are not allowed to modify the question object 
 throughout its lifetime, \ie the [[code]] attribute must not be modified.
 (That is why we do not provide any method to modify it.)
@@ -397,6 +410,9 @@ It will be useful to compute the set of tags for several questions, for this
 purpose we provide the following function.
 <<functions>>=
 def tags(questions):
+  """
+  Takes a set of questions and returns the union of their tags.
+  """
   T = set()
   for q in questions:
     T |= q.tags
@@ -420,9 +436,8 @@ This list can be extracted in the following way:
 <<filter out tags using regex>>
 @ where
 <<question tags regex pattern>>=
-question_label_pattern = re.compile(
-  "\\\\label{(q|xrc):([^}]*)}",
-  re.MULTILINE)
+question_label_pattern = re.compile("\\\\label{(q|xrc):([^}]*)}",
+                                    re.MULTILINE)
 @
 
 \begin{example}[Tags in label]
@@ -455,9 +470,8 @@ For this reason we also want to provide another way to supply several
 longer-named tags, \eg to have \acp{ILO} as tags.
 We will do this by a specially crafted comment in the code of the question.
 <<question tags regex pattern>>=
-question_comment_pattern = re.compile(
-  "% ?(tags?|ilos?|ILOs?|topics?): ?(.*)$",
-  re.MULTILINE)
+question_comment_pattern = re.compile("% ?(tags?|ilos?|ILOs?|topics?): ?(.*)$",
+                                      re.MULTILINE)
 @ Then we can take the union of these tags and those found in the label:
 <<filter out tags using regex>>=
 matched_tags = question_comment_pattern.finditer(self.code)
@@ -514,9 +528,10 @@ Then we will discuss how to adapt its behaviour in
 When we generate an exam, we want to specify which tags we are interested in.
 We can do this using an argument on the command-line:
 <<parse arguments>>=
-argp.add_argument(
-  "-t", "--tags", nargs="+",
-  required=True, help="Adds required question tags")
+argp.add_argument("-t", "--tags",
+                  nargs="+",
+                  required=True,
+                  help="Adds required question tags")
 @ This will give us a list of tags which we can use when selecting the 
 questions for the exam:
 <<process arguments>>=
@@ -540,6 +555,19 @@ a predicate for stopping and a question filter.
 Thus, to find a covering (generate an exam) we can do the following:
 <<functions>>=
 def examgen(questions, required_tags, stop_condition, question_filter):
+  """
+  Generates an exam from
+
+  - `questions`, a set of questions;
+  - `required_tags`, a set of required tags;
+  - `stop_condition`, a callable object which takes a set of questions and 
+    returns a boolean;
+  - `question_filter`, a callable object which takes a question and a set of 
+    questions and returns a question or None.
+
+  The function will yield questions (it's a generator) until the stop condition 
+  is met.
+  """
   exam_questions = set()
   while not stop_condition(exam_questions):
     <<randomly select a question>>
@@ -601,7 +629,7 @@ Now we can generate an exam in the following way:
 <<set up question filter>>
 for q in examgen(questions, required_tags,
                  stop_condition, question_filter):
-  print("{0}".format(q.code))
+  print(q.code)
 @ We will return to the stop condition in \cref{StopConditions} and filters, 
 first, in [[<<check if the question is good>>]] and then in 
 \cref{QuestionFilters}.
@@ -625,10 +653,21 @@ of the tags of the questions in the exam, \(E\subseteq \bigcup_i Q_i\).
 Now we can formulate that stop condition as:
 <<classes>>=
 class StopWhenSubset:
+  """
+  A stop condition which stops when the required tags are a subset of the 
+  selected questions.
+  """
   def __init__(self, required_tags):
+    """
+    Sets the required tags for the stop condition.
+    """
     self.__req_tags = required_tags
 
   def __call__(self, selected_questions):
+    """
+    Returns True if the required tags are a subset of the tags of the selected 
+    questions.
+    """
     return self.__req_tags <= tags(selected_questions)
 @
 
@@ -657,6 +696,10 @@ We want to compose functions, and to do this we can introduce a function
 function.
 <<functions>>=
 def compose_filters(filterA, filterB):
+  """
+  Composes two filters, filterA and filterB, into a new filter function.
+  The new function will call filterA and pass its output to filterB.
+  """
   return lambda x, y: filterB(filterA(x, y), y)
 @
 
@@ -667,7 +710,13 @@ Sometimes this is actually useful, but it also illustrates the technique we
 will continue to use for the other filters.
 <<classes>>=
 class NoFilter:
+  """
+  A filter which allows all questions to pass.
+  """
   def __call__(self, question, selected_questions):
+    """
+    Returns the question as is.
+    """
     return question
 @ We can add this as the default filter.
 <<set up question filter>>=
@@ -684,7 +733,14 @@ This way we will not have several questions covering exactly the same tags, but
 they are allowed to overlap by a proper subset.
 <<classes>>=
 class IsNotSubset:
+  """
+  A filter which requires that the question adds new tags to the exam.
+  """
   def __call__(self, question, selected_questions):
+    """
+    Returns `question` if it adds new tags to `selected_questions`,
+    otherwise None.
+    """
     if question is None:
       return None
     elif question.tags <= tags(selected_questions):
@@ -695,10 +751,10 @@ class IsNotSubset:
 
 We will add a command-line option to enable this filter.
 <<parse arguments>>=
-argp.add_argument(
-  "-N", "--require-new-tags",
-  default=False, action="store_true",
-  help="Requires that each new question adds new tags to the exam")
+argp.add_argument("-N", "--require-new-tags",
+                  default=False, action="store_true",
+                  help="Requires that each new question adds "
+                       "new tags to the exam.")
 @ If this option is enabled we will compose this filter with already set 
 filters.
 <<set up question filter>>=
@@ -712,7 +768,14 @@ We can also add a stricter version of the previous filter, \ie to require
 that each question has no overlapping tags.
 <<classes>>=
 class DisjointQuestions:
+  """
+  A filter which requires that the question has disjoint tag sets.
+  """
   def __call__(self, question, selected_questions):
+    """
+    Returns `question` if it has disjoint tag sets with `selected_questions`, 
+    otherwise None.
+    """
     if question is None:
       return None
     elif question.tags & tags(selected_questions) != set():
@@ -723,10 +786,10 @@ class DisjointQuestions:
 
 We will add the following command-line option to enable this filter.
 <<parse arguments>>=
-argp.add_argument(
-  "-D", "--require-disjoint",
-  default=False, action="store_true",
-  help="Requires that each question has disjoint tag sets")
+argp.add_argument("-D", "--require-disjoint",
+                  default=False, action="store_true",
+                  help="Requires that each question has "
+                       "disjoint tag sets.")
 @ We will simply compose this filter if enabled.
 <<set up question filter>>=
 if args["require_disjoint"]:
@@ -741,10 +804,22 @@ This means that a question must have one of the required tags.
 As such, we also need to provide the filter with the required tags.
 <<classes>>=
 class RequireCover:
+  """
+  A filter which requires that the question covers some of the required tags.
+  """
   def __init__(self, required_tags):
+    """
+    Sets the required tags for the filter.
+    """
     self.__req_tags = required_tags
 
   def __call__(self, question, selected_questions):
+    """
+    Returns `question` if it covers some of the required tags,
+    as set in the constructor, otherwise None.
+
+    The `selected_questions` parameter is not used in this filter.
+    """
     if question is None:
       return None
     elif question.tags & self.__req_tags != set():
@@ -755,15 +830,15 @@ class RequireCover:
 
 We provide the following command-line option to enable this filter.
 <<parse arguments>>=
-argp.add_argument(
-  "-C", "--require-cover",
-  default=False, action="store_true",
-  help="Requires that each question must cover some of the required tags")
+argp.add_argument("-C", "--require-cover",
+                  default=False, action="store_true",
+                  help="Requires that each question must "
+                       "cover some of the required tags.")
 @ If this is enabled we will compose the filter.
 <<set up question filter>>=
 if args["require_cover"]:
-  question_filter = \
-    compose_filters(question_filter, RequireCover(required_tags))
+  question_filter = compose_filters(question_filter,
+                                    RequireCover(required_tags))
 @
 
 \subsubsection{An exact covering}
@@ -774,10 +849,23 @@ This requires a stronger filter than the previous one, \ie the question tags
 must be a subset of the exam tags, \(Q_i\subseteq E\).
 <<classes>>=
 class ExactCovering:
+  """
+  A filter which requires that the question's tags are a subset of the required 
+  tags.
+  """
   def __init__(self, required_tags):
+    """
+    Sets the required tags for the filter.
+    """
     self.__req_tags = required_tags
 
   def __call__(self, question, selected_questions):
+    """
+    Returns `question` if its tags are a subset of the required tags, as set in 
+    the constructor, otherwise None.
+
+    The `selected_questions` parameter is not used in this filter.
+    """
     if question is None:
       return None
     elif question.tags <= self.__req_tags:
@@ -788,16 +876,15 @@ class ExactCovering:
 
 We will add a command-line option to activate this filter.
 <<parse arguments>>=
-argp.add_argument(
-  "-E", "--require-exact",
-  default=False, action="store_true",
-  help="Requires every question's tag set to be a subset of the required tags"
-    ", i.e. an exact covering")
+argp.add_argument("-E", "--require-exact",
+                  default=False, action="store_true",
+                  help="Requires every question's tag set to "
+                       "be a subset of the required tags.")
 @ And finally we compose it if enabled.
 <<set up question filter>>=
 if args["require_exact"]:
-  question_filter = \
-    compose_filters(question_filter, ExactCovering(required_tags))
+  question_filter = compose_filters(question_filter,
+                                    ExactCovering(required_tags))
 @
 
 \subsubsection{Human intervention}%
@@ -817,11 +904,11 @@ generate a list of questions to use as inspiration for a new exam.
 Since this is a feature we might only want occasionally, we add a command-line 
 argument to enable it:
 <<parse arguments>>=
-argp.add_argument(
-  "-i", "--interactive",
-  default=False, action="store_true",
-  help="Turns interactive mode on, "
-    "lets you edit each qualifying question with ${EDITOR}")
+argp.add_argument("-i", "--interactive",
+                  default=False, action="store_true",
+                  help="Turns interactive mode on, "
+                       "lets you edit each qualifying "
+                       "question with ${EDITOR}")
 @ We will create a filter which provides this interaction.
 We will need to know about the required tags to provide some help to the user, 
 \eg to remind the user of the remaining required tags not already covered.
@@ -829,16 +916,29 @@ We also need to re-filter the question after editing, to ensure that it still
 conforms to the user's other filters.
 <<classes>>=
 class OpenWithEditor:
+  """
+  A filter which opens the question in the user's editor.
+  """
   def __init__(self, required_tags, question_filter):
+    """
+    Sets the required tags and the question filter for the filter.
+    """
     self.__req_tags = required_tags
     self.__filter = question_filter
 
   def __call__(self, question, selected_questions):
+    """
+    Opens the question in the user's editor. When the user is done editing, the 
+    question is re-filtered using the filter set in the constructor. This is 
+    done to ensure that the question is still qualified.
+    """
     if question is None:
       return None
     else:
-      return edit_question(question, self.__req_tags, self.__filter,
-        selected_questions)
+      return edit_question(question,
+                           self.__req_tags,
+                           self.__filter,
+                           selected_questions)
 @ Consequently we will compose this filter in the same fashion as previously.
 The only difference is that we supply the current composed filter to our 
 interactive filter.
@@ -851,6 +951,13 @@ if args["interactive"]:
 The [[edit_question]] function is defined as follows.
 <<functions>>=
 def edit_question(question, required_tags, question_filter, exam_questions):
+  """
+  Opens `question` in the user's editor. Includes the remaining required tags 
+  in the file.
+
+  When the user is done editing, the question is re-filtered using 
+  `question_filter`. This also requires the `exam_questions` set to be passed.
+  """
   <<open the question in the editor>>
   <<check that the question is still qualified>>
 @
@@ -905,13 +1012,13 @@ also want to include which tags are remaining for a complete cover of the tags.
 Thus, first we write the remaining tags followed by a separator and finally the
 code of the question.
 <<write the question to file>>=
-for t in (required_tags - tags(exam_questions)):
-  file.write("% remaining tag: " + t + "\n")
-file.write("\n" + REMOVE_ABOVE_SEPARATOR + "\n")
+for tag in (required_tags - tags(exam_questions)):
+  file.write(f"% remaining tag: {tag}\n")
+file.write(f"\n{REMOVE_ABOVE_SEPARATOR}\n")
 file.write(question.code)
 @ We add the separator to our constants.
 <<constants>>=
-REMOVE_ABOVE_SEPARATOR = "% ----- Everything ABOVE will be REMOVED -----"
+REMOVE_ABOVE_SEPARATOR = "%< ----- Everything ABOVE will be REMOVED -----"
 @ Conversely we also want to read the edited file back when the user is done 
 editing.
 <<read the question back from file>>=
@@ -937,14 +1044,12 @@ notifying the user.
 <<check that the question is still qualified>>=
 filtered_question = question_filter(question, exam_questions)
 if filtered_question is None:
-  print("{0}: {1}\n".format(sys.argv[0],
-    "the question does not pass the filter(s)"),
-    file=sys.stderr)
+  print(f"{sys.argv[0]}: the question does not pass the filter(s)\n",
+        file=sys.stderr)
   <<ask the user to reject or edit again>>
 elif filtered_question != question:
-  print("{0}: {1}\n".format(sys.argv[0],
-    "the question was modified by the filter(s)"),
-    file=sys.stderr)
+  print(f"{sys.argv[0]}: the question was modified by the filter(s)",
+        file=sys.stderr)
   <<ask the user to accept, edit filtered or unfiltered, or reject>>
 else:
   <<ask the user to accept, edit again or reject>>
@@ -963,7 +1068,7 @@ while True:
     return None
   elif action in {"E", "e", "edit"}:
     return edit_question(question, required_tags,
-      question_filter, exam_questions)
+                         question_filter, exam_questions)
   else:
     print("[e]dit again, [a]ccept, [r]eject: ", end="", file=sys.stderr)
     action = input()
@@ -971,7 +1076,7 @@ while True:
 need to add an option to edit the filtered or unfiltered version again.
 <<ask the user to accept, edit filtered or unfiltered, or reject>>=
 print("edit [f]iltered or [u]nfiltered, [a]ccept filtered, [r]eject: ",
-  end="", file=sys.stderr)
+      end="", file=sys.stderr)
 action = input()
 while True:
   if action in {"A", "a", "accept"}:
