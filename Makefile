@@ -10,6 +10,7 @@ examgen.pdf: example.tex
 examgen.pdf: makefiles/exam.tex
 
 examgen.pdf: didactic.sty
+examgen.pdf: dasak-150604.pdf
 
 examgen.tex: examgen.nw
 example.tex: example.mk.nw

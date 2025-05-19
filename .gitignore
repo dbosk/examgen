@@ -9,10 +9,7 @@ example.mk
 didactic.sty
 ltxobj/
 didactic_output_*
-
-nothing added to commit but untracked files present (use "git add" to track)
-
-nothing added to commit but untracked files present (use "git add" to track)
+__pycache__/
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
