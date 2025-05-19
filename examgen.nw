@@ -22,6 +22,8 @@
 \setpythontexoutputdir{.}
 \setpythontexworkingdir{..}
 
+\usepackage{pdfpages}
+
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -1108,11 +1110,6 @@ while True:
 @
 
 
-\section{The code}
-
-\inputminted{python}{examgen.py}
-
-
 \section{Usage examples}
 
 \input{example.tex}
@@ -1132,7 +1129,7 @@ Here is the literate source code of the makefiles used in the examples above.
 \let\subsection\oldsubsection
 
 
-\section*{Acknowledgements}
+\section{Acknowledgements}
 
 \input{acknowledgements.tex}
 
@@ -1140,9 +1137,32 @@ Here is the literate source code of the makefiles used in the examples above.
 \printbibliography
 
 
-\section*{An index of the code blocks}
+\appendix
+
+\section{An index of the code blocks}
 
 \nowebchunks
 
+
+\section{The tangled code of \texttt{examgen.py}}
+
+\inputminted{python}{examgen.py}
+
+
+\section{A generated exam}
+
+This is an example of a generated exam.
+The source code is available in \cref{ExamSource} and the compiled PDF in 
+\cref{ExamPDF}.
+
+\subsection{Example exam as source code}\label{ExamSource}
+
+\inputminted{latex}{dasak-150604.tex}
+
+\subsection{Example exam as compiled PDF}\label{ExamPDF}
+
+This is the compiled version of the source code in \cref{ExamSource}.
+
+\includepdf[pages=-, fitpaper=true]{./dasak-150604.pdf}
 
 \end{document}

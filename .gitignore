@@ -10,6 +10,7 @@ didactic.sty
 ltxobj/
 didactic_output_*
 __pycache__/
+dasak-150604.pdf
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
