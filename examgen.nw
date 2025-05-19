@@ -569,6 +569,9 @@ def examgen(questions, required_tags, stop_condition, question_filter):
 
   The function will yield questions (it's a generator) until the stop condition 
   is met.
+
+  If there are not enough questions to cover the required tags, a TagsLeftError 
+  exception will be raised.
   """
   exam_questions = set()
   while not stop_condition(exam_questions):
@@ -589,12 +592,37 @@ try:
   question = random.sample(questions, 1)[0]
 except ValueError as err:
   tags_left = required_tags - tags(exam_questions)
-  raise ValueError("{0}: missing {1}".format(err, tags_left))
+  raise TagsLeftError(f"No more questions available, "
+                      f"missing tags: {tags_left}.",
+                      tags_left)
 @ [[random.sample]] returns a list of the one sample we requested or it raises 
 an exception.
 If no error occurred when randomly selecting a question, then we store only 
 that sample (instead of a list containing only one sample).
-Then we can add the question to the exam by
+We want a special exception type that keeps track of the remaining tags.
+It's a type of [[ValueError]], so it should derive from it.
+<<classes>>=
+class TagsLeftError(ValueError):
+  """
+  Exception raised when there are no more questions available,
+  but there are still tags.
+  """
+  def __init__(self, message, tags_left):
+    """
+    Sets the message and the remaining tags.
+    """
+    super().__init__(message)
+    self.__tags_left = tags_left
+
+  @property
+  def tags_left(self):
+    """
+    Returns the remaining tags.
+    """
+    return self.__tags_left.copy()
+@
+
+If no error, we can add the question to the exam by
 <<yield the question as output>>=
 exam_questions.add(question)
 yield question
