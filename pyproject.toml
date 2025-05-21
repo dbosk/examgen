@@ -5,9 +5,15 @@ description = "An exam generator"
 authors = ["Daniel Bosk"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/dbosk/examgen"
+keywords = ["exam", "generator", "examgen", "LaTeX"]
 
 [tool.poetry.scripts]
 examgen = "examgen:main"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/dbosk/examgen/issues"
+"Releases" = "https://github.com/dbosk/examgen/releases"
 
 [tool.poetry.dependencies]
 python = "^3.8"
