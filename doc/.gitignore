@@ -1,0 +1,14 @@
+examgen.pdf
+init.py
+examgen
+examgen.tar.gz
+exam.tex
+examgen.tex
+example.tex
+example.mk
+didactic.sty
+ltxobj/
+didactic_output_*
+__pycache__/
+dasak-150604.pdf
+

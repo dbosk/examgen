@@ -1,51 +1,31 @@
-.PHONY: all
-all: examgen.pdf
+SUBDIR_GOALS=all clean distclean
 
-LATEXFLAGS=	-shell-escape
+SUBDIR+=	src/examgen
+SUBDIR+=	doc
 
-examgen.pdf: examgen.tex abstract.tex examgen.bib
-examgen.pdf: acknowledgements.tex LICENSE
-examgen.pdf: examgen.py
-examgen.pdf: example.tex
-examgen.pdf: makefiles/exam.tex
+version=$(shell sed -n 's/^ *version *= *\"\([^\"]\+\)\"/\1/p' pyproject.toml)
 
-examgen.pdf: didactic.sty
+.PHONY: all publish
 
-examgen.tex: examgen.nw
-example.tex: example.mk.nw
+all: README.md
 
-all: examgen
+README.md: doc/abstract.tex
+	pandoc -o $@ $< -t gfm
+	${EDITOR} $@
 
-examgen.py: examgen.nw
-examgen: examgen.py
-	cp $^ $@
-	chmod +x $@
+publish: all
+	poetry build
+	poetry publish
+	git push
+	gh release create -t v${version} v${version} \
+		doc/kthutils.pdf \
+		src/kthutils/restlabb.sh src/kthutils/restlabbsetup.sh
 
-all: example.mk
 
-example.mk: example.mk.nw
-
-makefiles/exam.tex: makefiles/exam.mk.nw
-	${MAKE} -C makefiles exam.tex
-
-.PHONY: clean
+.PHONY: clean distclean
 clean:
-	${RM} examgen examgen.py examgen.pdf examgen.tex
-	${RM} example.mk example.tex
-
-
-PREFIX?= 				/usr/local
-
-PKG_NAME-main= 			examgen
-PKG_INSTALL_FILES-main= examgen
-PKG_PREFIX-main= 		${PREFIX}
-PKG_INSTALL_DIR-main= 	/bin
-PKG_TARBALL_FILES-main= ${PKG_INSTALL_FILES-main} Makefile
-
+distclean:
+	${RM} -Rf dist
 
 INCLUDE_MAKEFILES=makefiles
-include ${INCLUDE_MAKEFILES}/tex.mk
-include ${INCLUDE_MAKEFILES}/noweb.mk
-include ${INCLUDE_MAKEFILES}/pkg.mk
-INCLUDE_DIDACTIC=didactic
-include ${INCLUDE_DIDACTIC}/didactic.mk
+include ${INCLUDE_MAKEFILES}/subdir.mk

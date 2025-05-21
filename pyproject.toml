@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "examgen"
+version = "4.0"
+description = "An exam generator"
+authors = ["Daniel Bosk"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.scripts]
+examgen = "examgen:main"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
