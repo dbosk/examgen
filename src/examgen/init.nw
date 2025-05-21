@@ -105,22 +105,22 @@ didactic_shell(["examgen", "--help"])
 
 \subsection{Outline}
 
-The program is a Python 3 script, [[<<examgen.py>>]].
+The program is a Python 3 script, [[<<init.py>>]].
 We will use the following structure:
-<<examgen.py>>=
+<<init.py>>=
 #!/usr/bin/env python3
 <<imports>>
 <<constants>>
 <<classes>>
 <<functions>>
 
-def main(argv):
+def main():
   """The main function that runs the CLI."""
   <<main body>>
 
 if __name__ == "__main__":
   try:
-    sys.exit(main(sys.argv))
+    sys.exit(main())
   except Exception as err:
     print(f"{sys.argv[0]}: {err}", file=sys.stderr)
     sys.exit(1)
@@ -159,7 +159,7 @@ The processing step is rather straight-forward using [[argparse]].
 We simply parse [[argv]] and get a Python dictionary containing the variables 
 we specify in [[<<parse arguments>>]]:
 <<process arguments>>=
-args = vars(argp.parse_args(argv[1:]))
+args = vars(argp.parse_args())
 @
 
 
@@ -1152,7 +1152,7 @@ Here is the literate source code of the makefiles used in the examples above.
 \let\section\subsection
 \let\oldsubsection\subsection
 \let\subsection\subsubsection
-\input{makefiles/exam.tex}
+\input{../makefiles/exam.tex}
 \let\section\oldsection
 \let\subsection\oldsubsection
 
@@ -1172,9 +1172,9 @@ Here is the literate source code of the makefiles used in the examples above.
 \nowebchunks
 
 
-\section{The tangled code of \texttt{examgen.py}}
+\section{The tangled code of \texttt{init.py}}
 
-\inputminted{python}{examgen.py}
+\inputminted{python}{init.py}
 
 
 \section{A generated exam}

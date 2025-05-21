@@ -3,5 +3,5 @@
 	url = https://github.com/dbosk/makefiles.git
 	branch = master
 [submodule "didactic"]
-	path = didactic
+	path = doc/didactic
 	url = https://github.com/dbosk/didactic.git
